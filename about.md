@@ -4,12 +4,12 @@ title: About
 permalink: /about/
 ---
 
-Some information about you!
+Functional programming enthusiast. I dabble in graphics and audio engineering as well.
 
 ### More Information
 
-A place to include any other types of information that you'd like to include about yourself.
+Undergraduate at Colgate university.
 
 ### Contact me
 
-[email@domain.com](mailto:email@domain.com)
+[mschavinda@gmail.com](mailto:mschavinda@gmail.com)
