@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Towards shell tab completion: Simulating readline to capture intermediate input
+title: Towards shell tab completion - Simulating readline to capture intermediate input
 ---
 
 Any program that claims to be useful [REPL](https://en.wikipedia.org/wiki/Read-eval-print_loop)
