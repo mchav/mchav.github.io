@@ -24,7 +24,7 @@ Even then, command completion was useless to me because the it doesn't complete 
 containing all the programs starting with "a" and ignores the previous word.
 
 This difficulty arises from the fact that `read` in the bash source code sets the completion function to `null`
-and then tries binds it to either file or command completion only as mentioned (here)[http://stackoverflow.com/questions/4726695/bash-and-readline-tab-completion-in-a-user-input-loop]. Ultimately what this means is that tab completion past those two features
+and then tries binds it to either file or command completion only as mentioned [here](http://stackoverflow.com/questions/4726695/bash-and-readline-tab-completion-in-a-user-input-loop). Ultimately what this means is that tab completion past those two features
 is impossible. 
 
 Surely there must be a workaround, right?
