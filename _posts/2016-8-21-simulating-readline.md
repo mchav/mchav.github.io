@@ -13,7 +13,7 @@ must support three basic features:
 I wrote the [with tool](https://github.com/mchav/With) with these features in mind.
 `with` uses a `while` loop and bash's builtin command `read` to simulate a REPL.
 Adding history to the program was a simple command call, and supporting execution of arbitrary
-shell commands required a little (eval trickery)[https://github.com/mchav/with/issues/23].
+shell commands required a little [eval trickery](https://github.com/mchav/with/issues/23).
 
 
 The third feature, what has since become my holy grail, is tab completion in bash.
