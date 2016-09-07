@@ -3,6 +3,8 @@ layout: post
 title: With version 0-0-2 is out
 ---
 
+[with version 0.0.2 is out](https://github.com/mchav/with)
+
 I must say, I was pleasantly surprised by the uptake of the with tool. I was even more surprised by the community that started to build around it. The contributions have been invaluable. The new version brings some new changes thanks to kalterfive and dragonator.
 
 * with now supports tab completion
