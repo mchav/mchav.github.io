@@ -5,7 +5,7 @@ title: A simple server in Frege
 
 I've always liked working in Java because the packages are extensive and are usually well documented. However, I prefer working in functional languages because functional languages do a better job of enforcing modularity. [Frege](https://github.com/Frege/frege) seems to be the sweet spot between these two concerns (I haven't looked into [ETA](https://github.com/typelead/eta) yet but it seems promising too). So I took it upon myself to try and write a simple HTTP server in Frege using Java SE (if you count the sun packages as part of Java SE proper).
 
-The goal will be to server the text "<h1>It worked</h1>" to localhost:8000 using Frege. Let's start by defining the module that our application will exist in, the response string and a dummy main function.
+The goal will be to serve the text "<h1>It worked</h1>" to localhost:8000 using Frege. Let's start by defining the module that our application will exist in, the response string and a dummy main function.
 
 ```
 module Server where
@@ -93,7 +93,7 @@ main = do
 	println "Serving HTTP on 0.0.0.0 port 8000"
 ```
 
-A note on defining Java classes in Frege. Java classes correspond to Frege data types. In general, you define Java classes in Frege using the native keyword as follows: `data X = native java.dummy.Type`. This will make a data type X corresponding to the Java class type. To expose the class's methods simply give the type signatures as show above. There are some caveats but those are dealt with extensively in the Frege documentation.
+A note on defining Java classes in Frege. Java classes correspond to Frege data types. In general, you define Java classes in Frege using the native keyword as follows: `data X = native java.dummy.Type`. This will make a data type X corresponding to the Java class `Type`. To expose the class's methods simply give the name and type signature of each method as show above. There are some caveats but those are dealt with extensively in the Frege documentation.
 
 Say we wanted to define a Handler class that contains a `handle` function that will be called by the server. In Frege you can inline a Java module that will be hoisted to the top of the compiled Java file.
 
@@ -179,6 +179,6 @@ handle t = do
 	os.close
 ```
 
-There you have it! A simple server with all important parts in function land. This seems a little extraneous but I assure you with a more involved handler it is worth trudging through the boilerplate. Chances are with the adoptino of Frege and the availability of external libraries in Frege a lot of the boilerplate may disappear. Hopefully this motivates someone to contribute to a wonderful language community!
+There you have it! A simple server with all important parts in Frege land. This seems a little extraneous but I assure you with a more involved handler it is worth trudging through the boilerplate. Chances are with the adoption of Frege and the availability of external libraries in Frege a lot of the boilerplate may disappear. Hopefully this motivates someone to contribute to a wonderful language community!
 
 [The project is available on Github gist.](https://gist.github.com/mchav/ec2a5527d0d43f649aee6b2692a3628a)
