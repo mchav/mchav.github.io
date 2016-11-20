@@ -156,15 +156,15 @@ After some snooping and readin through the source code I found that the function
 
 ```
 @Override
-		public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
-			try {
-				final frege.run7.Func.U res = RunTM.<frege.run7.Func.U>cast(handlerFunction.apply(Thunk.lazy(t)).call());
-				frege.prelude.PreludeBase.TST.run(res).call();
-			} catch (Exception e) {
-				System.out.println("Failed to execute handler");
-			}
-			
-		}
+public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
+	try {
+		final frege.run7.Func.U res = RunTM.<frege.run7.Func.U>cast(handlerFunction.apply(Thunk.lazy(t)).call());
+		frege.prelude.PreludeBase.TST.run(res).call();
+	} catch (Exception e) {
+		System.out.println("Failed to execute handler");
+	}
+	
+}
 ```
 
 And now we have our handler function as:
