@@ -149,21 +149,37 @@ That's it! We have a complete definiton of an HttpServer in Frege. But wait, wha
 ```
 data HttpHandler = native com.sun.net.httpserver.HttpHandler where
 	-- substitute for a constructor
-	native new Fervor.Handler.newInstance :: (MutableIO HttpExchange -> IO ()) -> STMutable s HttpHandler 
+	native new Server.Handler.newInstance :: (MutableIO HttpExchange -> IO ()) -> STMutable s HttpHandler 
 ```
 
-After some snooping and readin through the source code I found that the function type in Frege is `Func.U` found in `frege.run7`. So we want our native code to take in an argument of type `frege.run7.Func.U` and then pass it to the handler which then runs it. But what does running it look like? The problem with the handler function as returned by Frege is that it is an unapplied function that is waiting for an HttpExchange. We evaluate the function by calling `apply` with a lazy value, casting it back to a function then calling run as follows:
+After some snooping and readin through the source code I found that the function type in Frege is `Func.U` found in `frege.run7<A, B>`where A is the input type and B is the return value type. This definition will only work if the compile target is Java 7. Java 8 or higher would fail. However, it should be easy to migrate to 8. So we want our native code to take in an argument of type `frege.run7.Func.U` and then pass it to the handler which then runs it. But what does running it look like? The problem with the handler function as returned by Frege is that it is an unapplied function that is waiting for an HttpExchange. We evaluate the function by calling `apply` with a lazy value, casting it back to a function then calling run as follows:
 
 ```
-@Override
-public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
-	try {
-		final frege.run7.Func.U res = RunTM.<frege.run7.Func.U>cast(handlerFunction.apply(Thunk.lazy(t)).call());
-		frege.prelude.PreludeBase.TST.run(res).call();
-	} catch (Exception e) {
-		System.out.println("Failed to execute handler");
+native module where {
+	public static class Handler implements com.sun.net.httpserver.HttpHandler {
+		final frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> handlerFunction;
+ 
+		public Handler(frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> function){
+			this.handlerFunction = function;
+		}
+ 
+		public static Handler newInstance(frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> function) {
+			Handler h = new Handler(function);
+			return h;
+		}
+ 
+		@Override
+		public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
+			try {
+				final Lazy<frege.run7.Func.U<RealWorld,Short>> args = handlerFunction.apply(Thunk.<com.sun.net.httpserver.HttpExchange>lazy(t)).call();
+				final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(args).call();
+				frege.prelude.PreludeBase.TST.run(res).call();
+			} catch (Exception e) {
+				System.out.println("Failed to execute handler");
+			}
+			
+		}
 	}
-	
 }
 ```
 
