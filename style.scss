@@ -19,7 +19,7 @@ html {
 
 body {
 	background: $white;
-  font: 18px/1.4 $helvetica;
+  font: 12px/1.4 $verdana;
   color: $darkGray;
 }
 
@@ -45,22 +45,22 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: 30px;
+  font-size: 24px;
   a {
     color: inherit;
   }
 }
 
 h2 {
-  font-size: 24px;
-}
-
-h3 {
   font-size: 20px;
 }
 
-h4 {
+h3 {
   font-size: 18px;
+}
+
+h4 {
+  font-size: 15px;
   color: $gray;
 }
 
@@ -165,9 +165,9 @@ img {
 
 .site-avatar {
   float: left;
-  width: 70px;
-  height: 70px;
-  margin-right: 15px;
+  width: 100px;
+  height: 1o0px;
+  margin-right: 5px;
 
   @include mobile {
     float: none;
@@ -196,7 +196,7 @@ img {
   cursor: pointer;
   font-family: $helveticaNeue;
   font-weight: 300;
-  font-size: 28px;
+  font-size: 10px;
   letter-spacing: 1px;
 }
 
@@ -212,7 +212,7 @@ img {
 
 nav {
   float: right;
-  margin-top: 23px; // @TODO: Vertically middle align
+  margin-top: 28px; // @TODO: Vertically middle align
   font-family: $helveticaNeue;
   font-size: 18px;
 
