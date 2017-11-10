@@ -4,11 +4,11 @@ title: About
 permalink: /about/
 ---
 
-Functional programming enthusiast. I dabble in graphics and audio engineering as well.
+Functional programming enthusiast. I like to make useful things. The two needn't be contradictory.
 
 ### More Information
 
-Undergraduate at Colgate university.
+Software engineer at Google.
 
 ### Contact me
 
