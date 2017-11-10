@@ -7,20 +7,14 @@ Almost all the time when I'm working on a project in a functional language such 
 over my shoulder to check what I'm doing, the conversation tends to begin with the person inquiring what language I'm
 coding in. The follow up question is inevitably what the language is used for. I struggle to answer this question every time.
 I could say it is a general purpose language that can be used for anything but that shies away from the question. If asked
-what any other language is use for I'd give somewhat definite answers. For Python I'd say it is big in the data science world
-and in academia because it's good for quick prototyping. For C++ I'd say that it's a good compromise between low-level
-programming and expressivity (comparing to C) that is. For Java I'd say it's used for a lot of commercial software and also
-for Android. There are similarly simple answers for languages like Kotlin, Julia and R. But for Frege/Haskell, I can never
-give as confident an answer. Part of it is because the language communities themselves recognise that there is no killer
-application or use-case one can point to that REQUIRES the use of Haskell/Frege over any other language. As such
-the package ecosystem hasn't evolved in a particular direction.
+what any other language is used for I'd likely give more definite answers. For Python I'd say it is big in the data science world and in academia because it's good for quick prototyping and has a large package ecosystem for both uses. For C++ I'd say that it's a good compromise between low-level programming and expressivity (compared to C that is). For Java I'd say it's used for a lot of commercial software and also for Android. There are similarly simple answers for languages like Kotlin, Julia and R. But for Frege/Haskell, I can never give as confident an answer. Part of it is because the language communities themselves recognise that there is no killer application or use-case one can point to that REQUIRES the use of Haskell/Frege over any other language. As such the package ecosystem hasn't evolved in a particular direction.
 
 This post motivates what I think is a good use case for functional languages in the near to distant future.
 
 Let me start with what inspired this.
 
-I was writing a MapReduce job at work in C++. The code was verbose and took quite a long time to set up. I won't go into 
-A detailed explanation of the [API](https://research.google.com/pubs/pub35650.html) I was working but roughly, writing
+I was writing a MapReduce job at work in Java. The code was verbose and took quite a long time to set up. I won't go into 
+a detailed explanation of the [API](https://research.google.com/pubs/pub35650.html) I was working but roughly, writing
 a mapreduce to do a simple data dump similar to that of the example of the paper linked above. Observe the following
 piece of code (from the example in the paper):
 
@@ -86,8 +80,7 @@ we needed a way to understand it. Again there was talk about using functional la
 specifically [neural networks](http://colah.github.io/posts/2015-09-NN-Types-FP/). To verify that this was not all talk,
 I put together a Frege Tensorflow API. I have a few examples (to be released) from the library that prove concretely
 that functional languages would make for composable, clear as describe in the aforementioned article.
-Functional languages, again, promised a simple intuitive design enforced by composition and purity. But the ecosystems [weren't quite prepared]
-(https://news.ycombinator.com/item?id=14402378) for this new age. Again, a potentially good use case came and went.
+Functional languages, again, promised a simple intuitive design enforced by composition and purity. But the ecosystems [weren't quite prepared](https://news.ycombinator.com/item?id=14402378) for this new age. Again, a potentially good use case came and went.
 
 My vision is for a functional language to become the go-to data science language in close competition with Python and R.
 
@@ -99,7 +92,7 @@ through with this vision.
 
 Why a JVM-based language? You get Java interop which means the arguments about the ecosystem not being quite
 ready aren't as potent. Quite a number of respectable data science and machine learning libraries already exist.
-It would be great to develop on top of them with Frege in the way that Keras builds on TensorFlow.
+It would be great to develop on top of them with Frege in the way that Keras builds on TensorFlow. ND4j, deeplearning4j, MLlib, Tensorflow and Weka are all well maintaned packages in the Java data science ecosystem. One of the reasons they aren't more widely adopted, in my opinion is because of the Java isn't the language you think to go to if you want to iterate quickly, as most data scientists usually want to do.
 
 There are arguments in the thread about Haskell's type system not being strong enough to encode simple linear algebra.
 A potential solution would be to use Idris which, luckily, has a JVM backend as well.
