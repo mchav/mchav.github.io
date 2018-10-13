@@ -7,7 +7,7 @@ My most recent project was an Android REPL application that reads an expression,
 
 Here is what the `AsyncTask` to send some code to the REPL would look like:
 
-```
+```java
  private class ReplResult extends AsyncTask<String, Void, String> {
      protected Long doInBackground(String... exprs) {
          StringBuilder sb = new StringBuilder();
@@ -41,7 +41,7 @@ So to evaluate an expression in the REPL, I can just run a thread to do the down
 
 Here is an simple Frege/Haskell example:
 
-```
+```haskell
 onCreate :: AppCompatActivity -> Maybe Bundle -> IO ()
 onCreate this bundle = do
     ...
@@ -53,7 +53,7 @@ onCreate this bundle = do
 
 This code will run the `evaluate` function in a forked thread (forkIO creates and thread and runs the given function in that thread) and then put the result into `resultVar` (read `>>=` as "and then"). But this has a slight problem; the UI thread will block waiting for `resultVar` to be filled. But Android provides a `View.post` method that allows async updates to a view. We can use the post function to update the `TextView` as follows:
 
-```
+```haskell
 onCreate :: AppCompatActivity -> Maybe Bundle -> IO ()
 onCreate this bundle = do
     ...
