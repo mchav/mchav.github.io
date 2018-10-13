@@ -7,7 +7,7 @@ I've always liked working in Java because the packages are extensive and are usu
 
 The goal will be to serve the text "<h1>It worked</h1>" to localhost:8000 using Frege. Let's start by defining the module that our application will exist in, the response string and a dummy main function.
 
-```
+```haskell
 module Server where
 
 response :: String
@@ -20,7 +20,7 @@ At a high level, we want to establish a socket connection to localhost, create a
 
 In Haskell-like pseudocode, the operations would be a series of `IO` actions as follows:
 
-```
+```haskell
 handler :: IO ()
 handler = send "<h1>It worked!</h1>"
 
@@ -32,7 +32,7 @@ main = do
 
 Rougly speaking, the Frege solution should look somewhat similar. So we have a tenative Frege section and we want to use some Java libraries to build the server. Let's first digress and see how the same solution would be implemented in pure Java. 
 
-```
+```java
 package server;
 
 import java.io.IOException;
@@ -68,7 +68,7 @@ public class Test {
 
 This isn't a clear case of interfacing with Java as you may notice. We have an interface that we need to implement. The interface must define a handler that we can assign to a context. But from the example above we have a rough idea of what the types should look like, so let's go ahead and define a few of them and revisit the main function.
 
-```
+```haskell
 data HttpExchange = native com.sun.net.httpserver.HttpExchange where
 	native getResponseBody :: MutableIO HttpExchange -> IO OutputStream
 	native sendResponseHeaders :: MutableIO HttpExchange -> Int -> Long -> IO () throws IOException
@@ -97,24 +97,24 @@ A note on defining Java classes in Frege. Java classes correspond to Frege data 
 
 Say we wanted to define a Handler class that contains a `handle` function that will be called by the server. In Frege you can inline a Java module that will be hoisted to the top of the compiled Java file.
 
-```
+```java
 native module where {
-	public static class Handler implements com.sun.net.httpserver.HttpHandler {
-		@Override
-		public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
-			String response = "This is the response";
-            t.sendResponseHeaders(200, response.length());
-            OutputStream os = t.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
-		}
-	}
+  public static class Handler implements com.sun.net.httpserver.HttpHandler {
+    @Override
+    public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
+      String response = "This is the response";
+      t.sendResponseHeaders(200, response.length());
+      OutputStream os = t.getResponseBody();
+      os.write(response.getBytes());
+      os.close();
+    }
+  }
 }
 ```
 
 This is where it gets a bit tricky. My first thought was that the data definition for this class would be:
 
-```
+```haskell
 data Handler = native com.sun.net.httpserver.HttpHandler where
 	native new Server.Handler.newInstance :: (MutableIO HttpExchange -> IO ()) -> STMutable s HttpHandler 
 ```
@@ -126,66 +126,64 @@ data Handler = native com.sun.net.httpserver.HttpHandler where
 	native new Fervor.Handler.newInstance :: () -> STMutable s HttpHandler 
 
 native module where {
-	public static Handler newInstance() {
-		Handler h = new Handler();
-		return h;
-	}
-
-	public static class Handler implements com.sun.net.httpserver.HttpHandler {
-		@Override
-		public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
-			String response = "This is the response";
-            t.sendResponseHeaders(200, response.length());
-            OutputStream os = t.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
-		}
-	}
+  public static Handler newInstance() {
+    Handler h = new Handler();
+    return h;
+  }
+  
+  public static class Handler implements com.sun.net.httpserver.HttpHandler {
+    @Override
+    public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
+      String response = "This is the response";
+      t.sendResponseHeaders(200, response.length());
+      OutputStream os = t.getResponseBody();
+      os.write(response.getBytes());
+      os.close();
+    }
+  }
 }
 ```
 
 That's it! We have a complete definiton of an HttpServer in Frege. But wait, what if we wanted to move the implementation of the interface to FregeLand rather than relying on Java still? This turns out to be quite a hairy problem that requires a dive into the Frege source code. We would need to communicate with the Frege code from within the java class to delegate the job of handling the request. My solution, after a few attempts,was to pass the handler function into the Handler constructor and then call it from within the Java code. First, let's make the constructor take in a function from HttpExchange to Unit.
 
-```
+```haskell
 data HttpHandler = native com.sun.net.httpserver.HttpHandler where
-	-- substitute for a constructor
-	native new Server.Handler.newInstance :: (MutableIO HttpExchange -> IO ()) -> STMutable s HttpHandler 
+  -- substitute for a constructor
+  native new Server.Handler.newInstance :: (MutableIO HttpExchange -> IO ()) -> STMutable s HttpHandler 
 ```
 
 After some snooping and readin through the source code I found that the function type in Frege is `Func.U` found in `frege.run7<A, B>`where A is the input type and B is the return value type. This definition will only work if the compile target is Java 7. Java 8 or higher would fail. However, it should be easy to migrate to 8. So we want our native code to take in an argument of type `frege.run7.Func.U` and then pass it to the handler which then runs it. But what does running it look like? The problem with the handler function as returned by Frege is that it is an unapplied function that is waiting for an HttpExchange. We evaluate the function by calling `apply` with a lazy value, casting it back to a function then calling run as follows:
 
-```
+```haskell
 native module where {
-	public static class Handler implements com.sun.net.httpserver.HttpHandler {
-		final frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> handlerFunction;
+ public static class Handler implements com.sun.net.httpserver.HttpHandler {
+   final Func.U<HttpExchange, Func.U<RealWorld,Short>> handlerFunction;
  
-		public Handler(frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> function){
-			this.handlerFunction = function;
-		}
+   public Handler(Func.U<HttpExchange, Func.U<RealWorld,Short>> function){
+     this.handlerFunction = function;
+   }
  
-		public static Handler newInstance(frege.run7.Func.U<com.sun.net.httpserver.HttpExchange,frege.run7.Func.U<RealWorld,Short>> function) {
-			Handler h = new Handler(function);
-			return h;
-		}
+  public static Handler newInstance(Func.U<HttpExchange, Func.U<RealWorld,Short>> function) {
+    Handler h = new Handler(function);
+    return h;
+  }
  
-		@Override
-		public void handle(com.sun.net.httpserver.HttpExchange t) throws java.io.IOException {
-			try {
-				final Lazy<frege.run7.Func.U<RealWorld,Short>> args = handlerFunction.apply(Thunk.<com.sun.net.httpserver.HttpExchange>lazy(t)).call();
-				final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(args).call();
-				frege.prelude.PreludeBase.TST.run(res).call();
-			} catch (Exception e) {
-				System.out.println("Failed to execute handler");
-			}
-			
-		}
-	}
+  @Override
+  public void handle(HttpExchange t) throws java.io.IOException {
+    try 
+      final Lazy<Func.U<RealWorld,Short>> args = handlerFunction.apply(Thunk.<cHttpExchange>lazy(t)).call();
+      final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(args).call();
+      PreludeBase.TST.run(res).call();
+    } catch (Exception e) {
+      System.out.println("Failed to execute handler");
+    }			
+  }
 }
 ```
 
 And now we have our handler function as:
 
-```
+```haskell
 handle :: MutableIO HttpExchange -> IO ()
 handle t = do
 	t.sendResponseHeaders 200 (length response).long
