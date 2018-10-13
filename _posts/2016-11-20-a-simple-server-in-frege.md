@@ -121,7 +121,7 @@ data Handler = native com.sun.net.httpserver.HttpHandler where
 
 This will not compile because the Frege compiler will use Handler as a substitute for `com.sun.net.httpserver.HttpHandler`. When it tries to call the object constructor via new it will complain and tell you that HttpHandler is an abstract class or interface and therefore cannot be constructed. A workaround would be to provide a `newInstance` method that wraps the constructor then use `new` as a substitue for that native function. Now we have:
 
-```
+```java
 data Handler = native com.sun.net.httpserver.HttpHandler where
 	native new Fervor.Handler.newInstance :: () -> STMutable s HttpHandler 
 
