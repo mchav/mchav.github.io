@@ -18,7 +18,7 @@ One and a half applications in, I think I've learnt a blog post's worth of lesso
 ## Inheritance
 
 
-### Sublcassing Activities in Android
+### Subclassing Activities in Android
 
 The problem of subclassing has come up a couple of times during the development of froid. The first time it popped up was when I had to write the very first class needed to run Android, an activity. Frege has support for subclassing. The declaration `native module type X where { ... }` will make the module a subclass of X and hoist the definitions placed in `{ ... }` to the top of the Java file at compile time. This is the solution I leverage in the [previous post](http://mchav.github.io/frege-on-android/) however this solution required too much complicated boilerplate and knowledge of the inner workings of Frege. Crucially, the solution didn't scale very well. Some virtual methods can have up to 4 arguments and long type names. So I needed a way to abstract all this from the user. The key contraint for this problem was that `onCreate` had to be the entry point for the application. `onCreate` is an Android activity's de facto main and passing state through the activity constructor not only introduces strange bugs but wouldn't work here because we aren't calling the constructor ourselves, the Android OS is.
 
@@ -26,46 +26,43 @@ My inital solution involved method hiding. Since Frege compiles functions to sta
 
 So the problem now is to make `onCreate` act as a "main" and through it override other methods in the activity lifecycle. My final solution was to use reflection to dynamically call an `onCreate` with a given signature. Again this isn't type safe but it means the system only has one vulnerability that the user can be informed of at runtime. Not the best solution but a good compromise. I proceeded by subclassing `Activity` and then using the subclassed `Activity` as the default `Activity` class in the library as follows:
 
-```
+```java
 data Activity = native froid.app.Activity.FregeActivity
 
 public class FregeActivity extends android.app.Activity {
-        
-        // lambda instance variables
-        frege.run7.Func.U<frege.runtime.Phantom.RealWorld, Short> onPauseLambda = null;
+  // lambda instance variables
+  Func.U<Phantom.RealWorld, Short> onPauseLambda = null;
         ...
 
-        // setter for lambda
-        public void setOnPause(frege.run7.Func.U<frege.runtime.Phantom.RealWorld, Short> lambda) {
-            this.onPauseLambda = lambda;
-        }
+  // setter for lambda
+  public void setOnPause(Func.U<Phantom.RealWorld, Short> lambda) {
+    this.onPauseLambda = lambda;
+  }
 
-        ...
+  ...
 
-        private Object run(Object invokedMethod) {
-            if (invokedMethod == null) return null;
-            
-            final frege.run7.Func.U<Object,Short> res = frege.run.RunTM.<frege.run7.Func.U<Object,Short>>cast(
-                    invokedMethod).call();
-            return frege.prelude.PreludeBase.TST.run(res).call();
-        }
+  private Object run(Object invokedMethod) {
+    if (invokedMethod == null) return null;
+    final Func.U<Object,Short> res = RunTM.<Func.U<Object,Short>>cast(invokedMethod).call();
+    return PreludeBase.TST.run(res).call();
+  }
 
-        @Override
-        public void onCreate(android.os.Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            // wrap bundle in optional type
-            frege.prelude.PreludeBase.TMaybe<android.os.Bundle> sis = savedInstanceState == null ?
-             frege.prelude.PreludeBase.TMaybe.DNothing.<android.os.Bundle>mk(): 
-             frege.prelude.PreludeBase.TMaybe.DJust.<android.os.Bundle>mk(frege.run7.Thunk.<android.os.Bundle>lazy(savedInstanceState));
-            // method that does reflection and takes the original function signature for error handling
-            Object invokedOnCreate = invokeStaticActivityMethod("onCreate", new Object[] {this, sis}, "onCreate :: MutableIO Activity -> IO ()");
-            run(invokedOnCreate);   
-        }
+  @Override
+  public void onCreate(android.os.Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    // wrap bundle in optional type
+    PreludeBase.TMaybe<android.os.Bundle> sis = savedInstanceState == null ?
+    PreludeBase.TMaybe.DNothing.<Bundle>mk(): 
+    PreludeBase.TMaybe.DJust.<Bundle>mk(Thunk.<Bundle>lazy(savedInstanceState));
+    // method that does reflection and takes the original function signature for error handling
+    Object invokedOnCreate = invokeStaticActivityMethod("onCreate", new Object[] {this, sis}, "");
+    run(invokedOnCreate);   
+  }
 ```
 
 Now a simple activity can be written as follows:
 
-```
+```haskell
 module io.github.mchav.fregeandroid.FregeActivity where
 
 import froid.app.Activity
@@ -84,7 +81,7 @@ onCreate this = do
 
 This is a great improvement in the usability of the library because it not only reduces boilerplate, it also allows for some notion of global state. Since all the activity lifecycle methods can be set in `onCreate` you can define some `MVars` to pass across function closures. A great example would be the variable `cheated` in GeoQuiz which is used by the Activity methods to determine which questions in the quiz a user has cheated on. You neededn't know the API in depth for this example to make sense, the comments should explain the rationale well.
 
-```
+```haskell
 onCreate :: MutableIO Activity -> Maybe (MutableIO Bundle) -> IO ()
 onCreate this savedInstanceState = do
     ui <- setupUI this
@@ -119,28 +116,28 @@ Here is how you create objects using records and closures.
 
 Having records of functions to represent virtual methods (in the API I call these records delegators) turns out to be a pretty powerful mechanism I'll give the example of using Fragments in Android. Suppose I need to define a subclass of `Fragment` that overrides some methods and I control when and how Fragments are constructed. I can define a top level function that assigns each record field to a function and then makes the object using that delegator. This is how it looks in the `Fragment` class.
 
-```
+```haskell
 data Fragment = native android.support.v4.app.Fragment
 
 
 data FragmentDelegator = FragmentDelegator { ...
-                                           , onCreateView           :: Maybe (MutableIO Fragment -> MutableIO LayoutInflater -> MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View))
+  , onCreateView           :: Maybe (MutableIO Fragment -> MutableIO LayoutInflater -> MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View))
                                            ...
-                                       }
+}
 
 
 defaultFragmentDelegator :: FragmentDelegator
 defaultFragmentDelegator = FragmentDelegator { ...
-                                               , onCreateView           = Nothing
+  , onCreateView           = Nothing
                                                ..
-                                           }
+}
 ```
 
 We make all the fields Optional/Maybe types so the default delegator is a record of `Nothing`s. Now all we have to do is make the construtor and bridge the Java code over to Frege.
 
 The constructor should make a new fragment then assign a delegator to it as follows:
 
-```
+```java
 native delegateFragment "froid.support.v4.app.Fragment.delegate" :: FragmentDelegator -> STMutable RealWorld Fragment
 
 native module where {
@@ -169,7 +166,7 @@ We don't expose the constructor to the user, we only expose `delegateFragment` t
 
 An example of this would be in CriminalIntent where we provide an implementation of `onCreateView`:
 
-```
+```haskell
 onCreateView :: Crime -> MutableIO Fragment -> MutableIO LayoutInflater ->
                 MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View)
 onCreateView c this inf vg b = do
