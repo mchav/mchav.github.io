@@ -53,7 +53,7 @@ I want to be able to essentialy intercept each key press and then using the curr
 do something. So this boils down to reading a single character, which bash can do, swallowing the input, doing some processing,
 and finally printing some result on the same line. This little script does just that:
 
-```
+```bash
 my_read ()
 {
   while true
