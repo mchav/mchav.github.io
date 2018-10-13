@@ -14,10 +14,10 @@ Let's talk about the code.
 
 We want to extend the Activity class and then define some methods corresponding to the activity lifecycle. In a fashion similar to my [previous post](http://mchav.github.io/a-simple-server-in-frege/), we have a data declaration for `FregeActivity` and we extend the Activity class as follows:
 
-```
+```haskell
 data FregeActivity = native android.app.Activity
 native module type FregeActivity where {
-	super.onCreate(savedInstanceState);
+    super.onCreate(savedInstanceState);
     android.widget.TextView tv = new android.widget.TextView(this);
     tv.setText("Hello, Android - Love, Frege");
     setContentView(tv);
@@ -25,14 +25,14 @@ native module type FregeActivity where {
 
 This will programatically create a TextView and place the text "Hello, Android - Love, Frege" in a TextView at the top of the screen. But we want to move the code to FregeLand so we aren't just wrapping java code in a single Frege module. Again, similar to last blog post, we can make `onCreate` call a Frege Function. We don't, however, have to pass this function into the code through some method, we can refer to it by its Frege name since the "native" part is hoisted to the top of the compiled Java. Let's call our FregeVersion of `onCreate` `onCreateF` and give it as an argument, the Activity class so we can manipulate the context.
 
-```
+```haskell
 onCreateF :: MutableIO FregeActivity -> IO ()
 onCreateF !this = ...
 ```
 
 The reference must be strict so the method call in our native portion can take as an argument the reference `this` instead of wrapping the argument in the `Lazy` type. After defining some boilerplate and placing all the `onCreate` code in FregeLand we have:
 
-```
+```haskell
 module io.github.mchav.fregeandroid.FregeActivity where
 data Bundle = native android.os.Bundle
 
