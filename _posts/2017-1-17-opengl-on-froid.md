@@ -13,7 +13,7 @@ The example for this blog post will be a touch-rotated cube. I assume some knowl
 
 I'll take a bottom up approach and start from the cube, then define the renderer, and finally the surfaceview. We first need to define a cube. Since in OpenGL, an shape is a collection of Buffers we define the Cube data type as:
 
-```
+```haskell
 data Cube = CubeBuffers { vertexBuffer :: MutableIO IntBuffer
                         , colorBuffer  :: MutableIO IntBuffer
                         , indexBuffer  :: MutableIO ByteBuffer
@@ -22,7 +22,7 @@ data Cube = CubeBuffers { vertexBuffer :: MutableIO IntBuffer
 
 The buffers are plain `java.nio` buffers. These are the buffers that will be given to OpenGL to render. We'll make a function called `newCube` constructs these buffers from some Frege lists. We'll draw the cube using `GL10.glTriangles` so we'll need an index buffer and therefore an index array. The lists for our buffers are therefore:
 
-```
+```haskell
 one :: Int
 one = 0x10000
 
@@ -60,7 +60,7 @@ indices =   [ 0, 4, 5,    0, 5, 1
 
 The vertex and color buffers are IntBuffers and the index buffer is a byte buffer. For the IntBuffers we will start by making ByteBuffers, setting their order to nativeOrder, putting all the elements from the lists and then setting the buffer position to 0. We can abstract this task to a function `initIntBuffer`. We also define a function `initByteBuffer` that simply adds values to a buffer and initalises the position.
 
-```
+```haskell
 initIntBuffer :: [Int] -> IOMutable IntBuffer
 initIntBuffer xs = do
     nativeByteOrder <- ByteOrder.nativeOrder ()
@@ -83,7 +83,7 @@ initByteBuffer xs = do
 
 So our cube constructor simply constructs the buffers and places them in our `Cube` data type. To draw the cube we need only set up the vertex and colour pointers then finally draw some triangles using the index buffer. This part will read like regular OpenGL
 
-```
+```haskell
 newCube :: IO Cube
 newCube = do
     vertexBuffer <- initIntBuffer vertices
@@ -104,7 +104,7 @@ Because we want our renderer to be able to draw a cube at various angles depndin
 
 A renderer must implement 3 functions: `onDrawFrame`, `onSurfaceCreated`, and `onSurfaceChanged`. Let's go ahead and define that portion of the program.
 
-```
+```haskell
 -- cube renderer
 newCubeRenderer :: IORef Float -> IORef Float -> STMutable RealWorld GLSurfaceViewRenderer
 newCubeRenderer angleX angleY = do
@@ -151,7 +151,7 @@ onSurfaceChanged gl width height = do
 
 Now let's define our surfaceview in a similar way. This time, instead, delegating to `onTouchEvent` and `onTrackball` event so the cube can respond to touch. We define 4 mutable variables - the x and y angles of the cube as well as their previous positions for calculations and define some scaling constants for each kind of device.
 
-```
+```haskell
 -- GLSurfaceView
 
 newTouchSurfaceView :: MutableIO Context -> IOMutable GLSurfaceView
@@ -208,7 +208,7 @@ trackballScaleFactor = 36.0
 
 Finally we link this all to an activity. The important thing to remember is that we call `GLSurfaceView`'s onPause and onResume when we call the Activities's onPause and onResume so it can reload its state.
 
-```
+```haskell
 module io.github.mchav.touchcube.CubeActivity where
 
 import froid.javax.microedition.khronos.egl.EGLConfig
