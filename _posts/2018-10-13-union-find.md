@@ -1,9 +1,7 @@
 ---
 layout: post
-title: My dream for the future of Frege
+title: Union find
 ---
-
-# Union Find
 
 ### Motivation
 Let's take on the role of a seasoned social media stalker. To make it more tasteful, let's call it "networking." We'd like to find out who's who on the internet and also their relation to us or the people we know. That is, given a person of interest we'd like to know if it's possible to get in touch with them through a friend or a friend of a friend and so on. This is called the connectivity problem. It asks if there is some connection between two objects. And to solve it we need to design a data structure that supports two fundamental operations between the objects of concern: connecting two objects and finding out if two objects are connected. Unsurprisngly, the data structure that solves this problem is called union-find.
