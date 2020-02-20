@@ -8,6 +8,17 @@ they've been to. The ratings are on a 5 point scale. Suppose further that our
 dataset contains only three columns: the place being rated, the average 
 rating of the place, and the number of ratings that place has received.
 
+| Place         | Rating  | Number of ratings  |
+|---------------|---------|--------------------|
+| Restaurant A  |   5.0   |       400          |
+| Restaurant B  |   4.5   |       130          |
+| Restaurant C  |   4.7   |         2          |
+| Restaurant D  |   3.3   |       500          |
+| Restaurant E  |   2.8   |       160          |
+| Restaurant F  |   3.8   |        10          |
+| Restaurant G  |   1.3   |      1000          |
+| Restaurant H  |   1.8   |       190          |
+| Restaurant I  |   2.0   |        30          |
 
 How do we sort this list of places from best to worst?
 
@@ -38,8 +49,6 @@ percentile will map to the second bucket and so on.
 
 
 Our final score will be the product of the two values. Going back to our
-previous problem where the 1* rated place ranked first from sheer volume. In the
+previous problem where the 1* rated place ranked first from sheer volume - . In the
 case where the number of ratings is in the 80th to 100th percentile, the
-total score for the place is 5. Which is pretty low on a 25 point ranking scale.
-
-
+total score for the place is 5 - which is pretty low on a 25 point ranking scale.
