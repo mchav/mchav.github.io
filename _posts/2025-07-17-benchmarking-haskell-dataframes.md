@@ -3,7 +3,7 @@ layout: post
 title: Benchmarking Haskell dataframes against Python dataframes
 ---
 
-I've been working on a dataframe implementation in Haskell for about a year now. While my focus has been on ergonomics the question of performance has inevitably come up. I haven't made significant performance investments it's probably good to stop and think 
+I've been working on a dataframe implementation in Haskell for about a year now. While my focus has been on ergonomics the question of performance has inevitably come up. I haven't made significant performance investments but I thought it might be worth snapshotting the performance to establish a baseline.
 
 ## A benchmark for the impatient
 
