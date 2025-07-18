@@ -16,7 +16,7 @@ I used three values of `n`: 100M, 150M and 300M. Polars and Pandas, on my machin
 | Size     | Haskell  | Polars  |  Pandas |
 |----------|----------|---------|---------|
 | O(100M)  |  6.343s  |  6.607s |  9.874s |
-| O(150M)  |  9.063s  | 10.607s |  9.874s |
+| O(150M)  |  9.063s  | 10.607s |  17.65s |
 | O(300M)  | 15.260s  | N/A     | N/A     |
 
 The performance is comparable to Polars and 2x faster than Pandas. But, again, these are simple scans. Let's compare `groupBy` operations since those are a little more complicated.
