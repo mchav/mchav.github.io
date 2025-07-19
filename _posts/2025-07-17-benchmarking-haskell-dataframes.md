@@ -7,7 +7,7 @@ I've been working on a dataframe implementation in Haskell for about a year now.
 
 ## A benchmark for the impatient
 
-I'll start by adopting a small benchmark from the [C++ dataframe implementation](https://github.com/hosseinmoein/DataFrame?tab=readme-ov-file#performance). The benchmark generates a dataframe with three columns containing random numbers, runs statistics some statistics on the column, and finally filters elements satisfying a predicate.
+I'll start by adopting a small benchmark from the [C++ dataframe implementation](https://github.com/hosseinmoein/DataFrame?tab=readme-ov-file#performance). The benchmark generates a dataframe with three columns containing random numbers, runs some statistics on the columns, and finally filters elements satisfying a predicate.
 
 Because all these operations are effectively vector/array traversals this benchmark tests the underlying array implementation more than it tests dataframe specific operations (such as groupBy, pivot, melt, etc). But this is a good starting point since slow arrays mean slow everything. I used Haskell's Criterion library to generate the benchmark stats. The Python implementation has the slight overhead of spawning a separate process so there are some error bars in the performance numbers. The code can be found [here](https://github.com/mchav/dataframe/tree/main/benchmark).
 
