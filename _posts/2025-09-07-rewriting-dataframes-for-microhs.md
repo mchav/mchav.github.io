@@ -53,7 +53,7 @@ main = do
 
     -- Some expressions.
     let hotDays = df
-        & D.filterWhere (high `D.>=` D.lit (25 :: Int))
+        & D.filterWhere (high `F.>=` D.lit (25 :: Int))
         & D.derive "total" (high + low) 
         & D.derive "year" (F.lit (2025 :: Int)) 
     print hotDays
@@ -445,5 +445,3 @@ Sticking to Haskell 2010 pushed me to separate the public API from the implement
 - **It’s doable.** A usable DataFrame core—construction, simple expressions, `filterWhere`, `derive`, and Markdown rendering—works fine without GADTs, type families, or reflection. You pay in verbosity, not viability.
 - **Portability buys options.** A base-first design means the same front-end API can run on MicroHs for tiny CLIs or embedded contexts and on GHC for speed and ecosystem access.
 - **Trade-offs are clear.** MicroHs binaries are ~100× smaller and ~5–10× slower for this workload; for many data-wrangling tasks that’s a great swap, and you can still keep a GHC backend for heavy lifting.
-
-
