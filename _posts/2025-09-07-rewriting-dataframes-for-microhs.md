@@ -40,23 +40,23 @@ import DataFrame ((|>))
 
 main :: IO ()
 main = do
-  let highs = [(24 :: Int), 20, 22, 23, 25, 26, 26]
-  let lows = [(14 :: Int), 13, 13, 13, 14, 15, 15]
-  let df = D.fromNamedColumns [
- ("Day", D.fromList (take (length highs) (cycle ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))),
- ("High Temperature (Celcius)", D.fromList highs),
- ("Low Temperature (Celcius)", D.fromList lows)]
+    let highs = [(24 :: Int), 20, 22, 23, 25, 26, 26]
+    let lows = [(14 :: Int), 13, 13, 13, 14, 15, 15]
+    let df = D.fromNamedColumns [
+        ("Day", D.fromList (take (length highs) (cycle ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))),
+        ("High Temperature (Celcius)", D.fromList highs),
+        ("Low Temperature (Celcius)", D.fromList lows)]
 
-  -- Typed column references
-  let high = F.col "High Temperature (Celcius)" :: D.Expr Int
-  let low = F.col "Low Temperature (Celcius)" :: D.Expr Int
+    -- Typed column references
+    let high = F.col "High Temperature (Celcius)" :: D.Expr Int
+    let low = F.col "Low Temperature (Celcius)" :: D.Expr Int
 
-  -- Some expressions.
-  let hotDays = df
- & D.filterWhere (high `D.>=` D.lit (25 :: Int))
- & D.derive "total" (high + low) 
- & D.derive "year" (F.lit (2025 :: Int)) 
- print hotDays
+    -- Some expressions.
+    let hotDays = df
+        & D.filterWhere (high `D.>=` D.lit (25 :: Int))
+        & D.derive "total" (high + low) 
+        & D.derive "year" (F.lit (2025 :: Int)) 
+    print hotDays
 ```
 
 The output should look roughly like this:
@@ -129,10 +129,10 @@ main = do
   let highs = [(24 :: Int), 20, 22, 23, 25, 26, 26]
   let lows = [(14 :: Int), 13, 13, 13, 14, 15, 15]
   let df = D.fromNamedColumns [
- ("Day", D.fromList (take (length highs) (cycle ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))),
- ("High Temperature (Celcius)", D.fromList highs),
- ("Low Temperature (Celcius)", D.fromList lows)]
- pure ()
+                ("Day", D.fromList (take (length highs) (cycle ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))),
+                ("High Temperature (Celcius)", D.fromList highs),
+                ("Low Temperature (Celcius)", D.fromList lows)]
+  pure ()
 ```
 
 To see the dataframe we define a small helper module for pretty printing.
