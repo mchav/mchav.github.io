@@ -53,7 +53,7 @@ main = do
 
     -- Some expressions.
     let hotDays = df
-        & D.filterWhere (high `F.>=` D.lit (25 :: Int))
+        & D.filterWhere (high F.>= D.lit (25 :: Int))
         & D.derive "total" (high + low) 
         & D.derive "year" (F.lit (2025 :: Int)) 
     print hotDays
