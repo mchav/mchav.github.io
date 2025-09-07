@@ -3,7 +3,7 @@ layout: post
 title: Rewriting dataframes for MicroHs
 ---
 
-## My fondness for Haskell alternatives
+## My fondness for alternative Haskells
 
 It's often said that the best way to learn a programming language (or programming in general) is to make things that you actively use. After I first learnt Haskell, I thought it natural to try and make something I'll use in my day-to-day life. An idea of what to make almost immediately sprang up in my head. Because I spent most of my college years travelling with the university's debate team, I thought it would be cool to make a simple countdown timer with large bold text and changing colours that I'd use to time my speeches. 
 
