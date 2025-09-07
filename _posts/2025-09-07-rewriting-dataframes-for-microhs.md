@@ -36,7 +36,7 @@ module Main (main) where
 import qualified DataFrame as D
 import qualified DataFrame.Functions as F
 
-import DataFrame ((|>))
+import Data.Function ((&))
 
 main :: IO ()
 main = do
