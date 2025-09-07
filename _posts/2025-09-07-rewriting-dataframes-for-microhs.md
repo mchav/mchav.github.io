@@ -87,8 +87,8 @@ In the main library, we allow columns to be of any type with a Show, Ord, and Eq
 
 ```haskell
 data Column = CInt [(Int,Int)]
- | CDouble [(Int, Double)]
- | CString [(Int, String)]
+            | CDouble [(Int, Double)]
+            | CString [(Int, String)]
 ```
 
 List are not a great choice for our column. Ideally, we would use vectors, arrays, or any other contiguous-memory data structure, but none of the options currently compile with microhs, so lists with indexes will do for now.
