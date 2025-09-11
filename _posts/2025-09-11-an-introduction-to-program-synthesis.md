@@ -497,6 +497,16 @@ A lot of ingenuity and domain knowledge go into pruning enumerative searches. Ch
 
 We must be careful how we prune since we could discard a part of the tree that would have been useful to explore. If a prune rule could remove a real solution, make it a ranking/bias (lower priority), not a hard filter. A lot of papers that suggest pruning search spaces in some way will provide elaborate proofs of correctness about their pruning strategy.
 
+We can safely prune programs whose output is bigger than the input or output. For string related problems long output usually means we are straying away from the solution.
+
+```haskell
+-- | For this problem we prune based on length.
+prune :: [(String, String)] -> [Program String -> Program String] -> [Program String -> Program String]
+prune examples ps = pruned
+    where
+        pruned = filter (\p -> all (\(i, o) -> length (interpret (p (SValue i))) <= max (length i) (length o)) examples) ps
+```
+
 ### Speed up
 After both deduplication and pruning, the program takes under a second to synthesise a function that solves our problem.
 
