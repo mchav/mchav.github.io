@@ -20,22 +20,21 @@ System 2 thinking, on the other hand, is slow and deliberate. It's speaking in f
 Human cognition is a constant dance between the two. Talking to a loved one is easy until the conversation topic is something sensitive. Writing a proof is hard until you discover the "trick" that could lead you to an answer. The two systems also interact in very strange ways. Ever had a eureka moment in the shower? Ever gotten a joke while driving, days after it was told? Problem-solving often means alternating between these two systems of thought.
 
 ### How machines "think"
-An analogous dichotomy can be applied to our approaches to artificial intelligence.
+An analogous dichotomy can be applied to artificial intelligence.
 
 Machine learning (broadly defined as using statistics to learn patterns from data) is system 1 thinking. It is the statistical "intuition" gained from gorging on mounds of data. It's easy to invalidate a lot of statistical approaches as memorisation (a lot of people will say LLMs are just a fancy autocomplete), but building the right statistical models is as difficult as building the right intuitions to solve problems. There has been a lot of ingenuity in this space over the last few decades.
 
-But it's not the entire story.
-
-Large language models hallucinate because the sort of thinking they do is prone to being wrong when things are difficult. This is a feature, not a bug.
+But that's not the entire story.
 
 Until the advent of deep learning in the early 2010s, artificial intelligence was dominated by systems that tried to recreate system 2 thinking. These are "slow" algorithms that take time to discover the "right" answer. Program synthesis is one such approach. It tries to search through the space of instructions until it discovers one that solves a specified problem.
 
-Synthesis approaches are hard to scale or expand. Again, this is a feature, not a bug.
-
 A growing number of researchers believe that getting to artificial general intelligence involves marrying the two approaches (what's now referred to as neuro-symbolic AI). There have been some promising achievements in the field recently:
 
-* DeepMind's Alpha geometry uses a combination of machine learning and symbolic methods to solve complex geometry problems ([Aleph0 has a really good video on this](https://www.youtube.com/watch?v=4NlrfOl0l8U)).
-* Open AI's o3 model, according to Francois Chollet, is [a form of deep learning guided program search](https://arcprize.org/blog/oai-o3-pub-breakthrough).
+DeepMind’s AlphaGeometry combines a learned model with a symbolic deduction engine and massive synthetic training data to tackle Olympiad-style geometry: in a Nature-reported benchmark of 30 problems drawn from IMO 2000–2022, it solved 25 within the time limit, approaching a human gold-medalist’s performance. Later, an upgraded AlphaGeometry 2 paired with AlphaProof (a reinforcement-learning formal prover) solved 4 of 6 problems from IMO 2024—silver-medal level. If you want a quick, approachable walkthrough of how this works, [Aleph0 has a really good video on this](https://www.youtube.com/watch?v=4NlrfOl0l8U).
+
+On the "reasoning LLM" front, OpenAI’s o3 pushed ARC-AGI scores sharply upward. François Chollet characterizes o3’s core as [a form of deep learning guided program search](https://arcprize.org/blog/oai-o3-pub-breakthrough): at test time the system explores and evaluates many candidate chains-of-thought—effectively short “programs” written in natural language—guided by a learned prior, and selects the best-scoring plan. Regardless of the exact internals, the result is stronger adaptation to novel tasks than earlier GPT-style models.
+
+Stepping back, these examples point to a common pattern: use learning to propose promising moves, and use search/logic to compose, check, and refine them. That division of labor (neural intuition plus symbolic rigor) is increasingly the template for systems that need both creativity and reliability.
 
 So, as we stand on the cusp of a future where synthesis looks as though it will make a resurgence in some incarnation, I thought it apt to write a series of practical blog posts on what it is.
 
@@ -45,14 +44,13 @@ We'll work from a definition offered in Armando Solar-Lezama's [MIT class on the
 
 _Program Synthesis correspond to a class of techniques that are able to generate a program from a collection of artifacts that establish semantic and syntactic requirements for the generated code._
 
-Program synthesis asks: given a specification of what I want, can a computer search the space of small programs and discover one that fits my needs?
+Program synthesis lives at the intersection of what you want (the specification) and how you look for it (the search). Syntheis searches through the space of candidate programs using a given criteria.
 
 ### Searching and Specification
 
 #### Specifying the problem
-Program synthesis lives at the intersection of what you want (the specification) and how you look for it (the search).
 
-A specification is any collection of clues that narrows down the set of acceptable programs. Those clues can be semantic (what the output must mean) or syntactic (what the code must look like).
+A specification is any collection of clues that narrows down the set of candidate programs. Those clues can be semantic (what the output must mean) or syntactic (what the code must look like).
 
 Synthesis problems are usually specified through:
 * Input–Output Examples (I/O): The friendliest form. "When input is Joshua Nkomo, output must be J. Nkomo."
@@ -67,13 +65,13 @@ By choosing a small, typed vocabulary (our string blocks), you ban ill-formed pr
 In our mini Flash-Fill program, the specification will be I/O examples.
 
 #### Searching the space
-At is core, synthesis is a search problem. Several families of search exist;
+At its core, synthesis is a search problem. Several families of search exist:
 
 1. Enumerative search
 2. Constraint-guided search
-3. Heuristic / ML-guided search (nice upgrade later)
+3. Heuristic / ML-guided search
 
-We'll focus on the latter two is subsequent posts. For this post we'll a use simple, yet powerful, type of enumerative search. 
+We'll focus on the latter two in subsequent posts. For this post we'll use a simple, yet powerful, type of enumerative search. 
 
 
 ## Building Our Synthesiser
@@ -83,15 +81,6 @@ _Follow along as you read the code on [Github](https://github.com/mchav/synthesi
 ### Starting from the bottom
 
 Here's the key insight: if we have a language of simple operations (head, tail, concat, etc.), we can systematically combine them to build complex programs. It's like having LEGO blocks - start with basic pieces and build increasingly complex structures until one solves the problem.
-
-Our algorithm:
-1. Start with the simplest possible program (just return the input unchanged)
-2. Generate all programs one step more complex
-3. Test each against the examples
-4. If none work, generate programs two steps more complex
-5. Repeat until success or timeout
-
-This is called "bottom-up enumerative search" - we enumerate programs from simplest to most complex.
 
 We'll write a synthesiser that generates programs that can solve problems of the following nature:
 
@@ -104,7 +93,17 @@ We'll write a synthesiser that generates programs that can solve problems of the
 
 ### The building blocks
 
-We usually start by defining our building blocks when we do synthesis. This is usually called a domain-specific language (DSL). First, we define a small "language" of basic operations that programs can use:
+We usually start by defining what the "legal moves" of our problem are. The "program" part of program synthesis is typically a small, expressive set of instructions that can solve our specific problem. We call this set of instructions a domain specific language (DSL).
+
+It is easy to view DSLs as a limitation. Why define a small language instead of generating any arbitrary code in a language like Python or Java? Doesn't a DSL mean that our technique inherently lacks power and expressivity?
+
+While a DSL can be viewed as a constraint, its contribution is far more profound than a simple restriction. The design of the DSL is deeply intertwined with the design of the search algorithm. A well-designed DSL exposes a set of operators and a program structure that are amenable to efficient search and, crucially, aggressive pruning of the search space. DSLs are how we embed domain knowledge into program synthesis.
+
+The development of FlashFill provides a canonical example of this principle. The synthesiser's DSL was not chosen arbitrarily; it was carefully engineered to enable an efficient top-down, divide-and-conquer search algorithm.
+
+If a DSL is too small, we risk not being able to express the target transformation. If it's too big, we drown in candidates and overfit to examples. We want a sweet spot: just expressive enough to cover the problem class, yet constrained enough that searches can complete in our lifetime.
+
+After eyeballing our problem (string manipulation) we decide our language should support these operations:
 
 * Head — keep the first character (“Joshua” → “J”)
 * Tail — drop the first character (“ Nkomo” → “Nkomo” after trimming a leading space)
@@ -166,52 +165,6 @@ The arrows (->) show what inputs each operation needs. For example:
 
 This structure is compositional. We can define longer programs in terms of these basic elements as we did in the solution above. The synthesis community typically uses functional programming languages because they express these relationships more clearly.
 
-The same structure in Python would look something like this:
-
-```python
-class Program:
-    """Base class for all program nodes (string- or int-producing)."""
-    pass
-
-@dataclass(frozen=True)
-class Concat(Program):
- left: Program   # expects a string-producing Program
- right: Program  # expects a string-producing Program
-
-@dataclass(frozen=True)
-class Substring(Program):
- start: Program  # int-producing Program (index or special End)
- end: Program    # int-producing Program (index or special End)
- s: Program      # string-producing Program
-
-@dataclass(frozen=True)
-class Tail(Program):
- s: Program  # string-producing Program
-
-@dataclass(frozen=True)
-class Head(Program):
- s: Program  # string-producing Program
-
-@dataclass(frozen=True)
-class SValue(Program):
- value: str  # constant string
-
-@dataclass(frozen=True)
-class Variable(Program):
-    """The input string."""
-    pass
-```
-
-The compositionality is lost in the verbosity so we stick to Haskell for demonstration.
-
-It is easy to view DSLs as a limitation. Why define a small language instead of generating any arbitrary code in a language like Python or Java? Doesn't a DSL mean that our technique inherently lacks power and expressivity?
-
-While a DSL can be viewed as a constraint, its contribution is far more profound than a simple restriction. The design of the DSL is deeply intertwined with the design of the search algorithm. A well-designed DSL exposes a set of operators and a program structure that are amenable to efficient search and, crucially, aggressive pruning of the search space. DSLs are how we embed domain knowledge into program synthesis.
-
-The development of FlashFill provides a canonical example of this principle. The synthesiser's DSL was not chosen arbitrarily; it was carefully engineered to enable an efficient top-down, divide-and-conquer search algorithm.
-
-If a DSL is too small, we risk not being able to express the target transformation. If it's too big, we drown in candidates and overfit to examples. We want a sweet spot: just expressive enough to cover the problem class, yet constrained enough that searches can complete in our lifetime.
-
 The interpreter for our DSL can also be defined recursively:
 
 ```haskell
@@ -227,9 +180,9 @@ interpret (Substring start end g) = ...
 
 Think of each `Program` as a tree node: `SValue "foo"` is a leaf; `Tail v`, `Head v` have one child; `Concat l r` has two children; `Substring start end g` has three. `interpret` walks that tree. Each line says, "if the node looks like this shape, do this." Haskell lets us write one equation per shape of input; the one that matches is used.
 
-Now we can define our also search strategy programtically. To recap:
+Now we can define our also search strategy programatically. To recap:
 
-1. **Start small**. Begin with the identity function and the input x. Optionally seed a few helpful constants (like " " or ".") and any characters shared across all inputs/outputs.
+1. **Start small**. Begin with the identity function and the input x. Optionally, seed a few helpful constants (like " " or ".") and any characters shared across all inputs/outputs.
 2. **Grow candidates**. Repeatedly build bigger programs by:
     * Wrapping existing ones with Head, Tail, etc.
     * Concatenating any two existing ones.
