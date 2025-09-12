@@ -45,7 +45,7 @@ We'll work from a definition offered in Armando Solar-Lezama's [MIT class on the
 
 _Program Synthesis correspond to a class of techniques that are able to generate a program from a collection of artifacts that establish semantic and syntactic requirements for the generated code._
 
-Program synthesis asks: given examples of what I want, can a computer search the space of small programs and discover one that fits?
+Program synthesis asks: given a specification of what I want, can a computer search the space of small programs and discover one that fits my needs?
 
 ### Searching and Specification
 
