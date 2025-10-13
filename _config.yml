@@ -96,4 +96,4 @@ kramdown:
   syntax_highlighter: rouge
   syntax_highlighter_opts:
     block:
-      line_numbers: true   # enables .rouge-table markup for fenced blocks
+      line_numbers: false   # enables .rouge-table markup for fenced blocks

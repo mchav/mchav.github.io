@@ -283,6 +283,95 @@ footer {
   text-align: center;
 }
 
+.highlight {
+  margin: 1em 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; // smooth scrolling on iOS
+  
+  @include mobile {
+    margin: 1em -10px; // extend to container edges on mobile
+    padding: 0 10px;
+    border-radius: 0;
+  }
+}
+
+.rouge-table {
+  width: 100%;
+  margin: 0;
+  border-spacing: 0;
+  font-size: 0.9em;
+  
+  @include mobile {
+    font-size: 0.85em;
+    display: block;
+    overflow-x: auto;
+  }
+  
+  tbody {
+    @include mobile {
+      display: block;
+    }
+  }
+  
+  tr {
+    @include mobile {
+      display: block;
+    }
+  }
+  
+  td {
+    padding: 0;
+    border: none;
+    
+    @include mobile {
+      display: block;
+    }
+    
+    &.gutter {
+      padding-right: 1em;
+      width: 3em;
+      text-align: right;
+      user-select: none;
+      
+      @include mobile {
+        display: none; // hide line numbers on mobile to save space
+      }
+    }
+    
+    &.code {
+      width: 100%;
+      
+      pre {
+        margin: 0;
+        white-space: pre;
+        word-wrap: normal;
+        overflow-x: auto;
+      }
+    }
+  }
+}
+
+// Ensure pre and code elements don't overflow
+pre {
+  overflow-x: auto;
+  max-width: 100%;
+  
+  code {
+    font-size: 0.75em;
+    display: block;
+    padding: 0.2em;
+    overflow-x: auto;
+    white-space: pre;
+    word-wrap: normal;
+  }
+}
+
+// Inline code (not in blocks)
+p code, li code {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
 // Settled on moving the import of syntax highlighting to the bottom of the CSS
 // ... Otherwise it really bloats up the top of the CSS file and makes it difficult to find the start
 @import "highlights";
