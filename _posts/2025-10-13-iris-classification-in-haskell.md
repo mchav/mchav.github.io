@@ -24,9 +24,9 @@ The Iris dataset is machine learning's "Hello, World!" created by statistician R
 * Versicolor
 * Virginica
 
-For each flower, we have four measurements (in centimeters):
+For each flower, we have four measurements (in centimetres):
 * Sepal length and width (the green outer part)
-* Petal length and width (the colorful inner part)
+* Petal length and width (the colourful inner part)
 
 Our task is to predict the species of a flower given these four measurements.
 
@@ -143,7 +143,7 @@ withTypedLabel =
 
 ## Preparing our data for ML
 
-For our model to generalize, we split the data: 70% for training, 30% for testing. Our random split function takes a seed and probability `p`. It return a tuple where `(p * 100)` % of the vakues are in the first element and the rest are in the second.
+For our model to generalise, we split the data: 70% for training, 30% for testing. Our random split function takes a seed and probability `p`. It return a tuple where `(p * 100)` % of the vakues are in the first element and the rest are in the second.
 
 The random seed (42) ensures reproducibility which is crucial for debugging.
 
@@ -167,7 +167,7 @@ let trainLabels = either throw id (D.columnAsIntVector "variety" trainDf)
 let testLabels = either throw id (D.columnAsIntVector "variety" testDf)
 ```
 
-Since we are predicting one of many classes, out target should be a one-hot vector:
+Since we are predicting one of many classes, our target should be a one-hot vector:
 
 - 0 (Setosa) → [1.0, 0.0, 0.0]
 - 1 (Versicolor) → [0.0, 1.0, 0.0]
@@ -185,7 +185,7 @@ The function application can be read from right to left:
 * Create a one-hot vector with three entries.
 * Then finally convert each int to a float.
 
-That's it. Our data is ready for machine learning. Now we can pass it to `Torch` and use it to train a small multi-layer perception.
+That's it. Our data is ready for machine learning. Now we can pass it to `Torch` and use it to train a small multi-layer perceptron.
 
 ## Training the model
 
@@ -228,7 +228,7 @@ Network Architecture Diagram:
 
 ### Making Our Model Trainable
 
-We need to tell Hasktorch how to initialize our network with random weights.
+We need to tell Hasktorch how to initialise our network with random weights.
 This is similar to defining `__init__()` in a PyTorch `nn.Module`:
 
 ```haskell
@@ -243,7 +243,7 @@ instance HT.Randomizable MLPSpec MLP where
 ```
 
 The `<$>` and `<*>` operators are Haskell's way of working with random
-initialization. Think of this as: "Create an MLP by randomly sampling
+initialisation. Think of this as: "Create an MLP by randomly sampling
 weights for both layers."
 
 
@@ -283,7 +283,7 @@ Training longer doesn't always mean better. At some point, your model starts mem
 
 We detect this by watching the test set loss. As long as test loss keeps decreasing, the model is learning generalizable patterns. But if training loss keeps dropping while test loss starts climbing, we're overfitting. 
 
-This is called early stopping, and it's one of the simplest yet most effective regularization techniques in machine learning.
+This is called early stopping, and it's one of the simplest yet most effective regularisation techniques in machine learning.
 
 #### The Training State
 Our training loop needs to track more than just the current model. We maintain:
@@ -295,7 +295,7 @@ Our training loop needs to track more than just the current model. We maintain:
 
 If we don't improve for several consecutive checks (in our case 5 iterations), we give up and return the best model we found. 
 
-The loop structure might look unusual if you're coming from PyTorch. Instead of a for loop with mutation, we use  the very similar looking `foldLoop` which takes a number of iterations, an initial state and a function that evolves that state with each iteration. Each iteration receives the previous state and returns the new state. No hidden mutable variables, just explicit data flow.
+The loop structure might look unusual if you're coming from PyTorch. Instead of a for loop with mutation, we use the very similar looking `foldLoop` which takes a number of iterations, an initial state and a function that evolves that state with each iteration. Each iteration receives the previous state and returns the new state. No hidden mutable variables, just explicit data flow.
 
 This is eventually the sort of thing we should abstract behind a good machine learning library but for now it's easy enough to implement.
 
@@ -308,50 +308,73 @@ trainLoop ::
     (HT.Tensor, HT.Tensor) ->       -- Test features and labels
     MLP ->                          -- Initial model
     IO MLP                          -- Returns trained model
-trainLoop
-    n
-    (features, labels)
-    (testFeatures, testLabels)
-    initialM = do
-        let patience = 5  -- stop after 5 checks without improvement
-            checkInterval = 500
-            initialBestLoss = read @Float "Infinity"
-        -- Extended state: (modelState, bestModelState, bestLoss, patienceCounter)
-        let extendedInitialState = (initialM, initialM, initialBestLoss, 0)
-        (_, bestModel, _, _) <- HT.foldLoop extendedInitialState n $ \(state, bestState, bestLoss, counter) i -> do
-            -- Early stopping check
-            if counter >= patience
-                then pure (state, bestState, bestLoss, counter)
-                else do
-                    -- Forward pass: compute predictions
-                    let predicted = mlp state features
-                    -- Compute loss (how wrong our predictions are)
-                    let loss = HT.binaryCrossEntropyLoss' labels predicted
-                    -- Backward pass: update weights using gradient descent
-                    (state', _) <- HT.runStep state HT.GD loss 1e-2
-                    let testPredicted = mlp state' testFeatures
-                        testLoss = HT.binaryCrossEntropyLoss' testLabels testPredicted
-                        currentTestLoss = HT.asValue testLoss :: Float
-                    when (i `mod` checkInterval == 0) $ do
-                        putStrLn $
-                            "Iteration: "
-                                ++ show i
-                                ++ " | Training Set Loss: "
-                                ++ show (HT.asValue loss :: Float)
-                                ++ " | Test Set Loss: "
-                                ++ show currentTestLoss
-                    -- Update best model and patience counter
-                    let (newBestState, newBestLoss, newCounter) =
-                            if currentTestLoss < bestLoss
-                                then (state', currentTestLoss, 0)
-                                else (bestState, bestLoss, counter + 1)
-                    pure (state', newBestState, newBestLoss, newCounter)
-        pure bestModel
+trainLoop n trainingData testData initialModel = do
+    let initialState = makeInitialState initialModel
+    (_, bestModel, _, _) <- HT.foldLoop initialState n (trainingStep trainingData testData)
+    pure bestModel
+  where
+    -- Configuration constants
+    patience = 5
+    checkInterval = 500
+    learningRate = 1e-2
+    initialBestLoss = read @Float "Infinity"
+    
+    -- Create initial training state
+    makeInitialState model = (model, model, initialBestLoss, 0)
+    
+    -- Main training step for each iteration
+    trainingStep (features, labels) (testFeatures, testLabels) (model, bestModel, bestLoss, counter) i
+        | shouldStopEarly counter = pure (model, bestModel, bestLoss, counter)
+        | otherwise = do
+            -- Train and evaluate
+            (updatedModel, trainLoss) <- performTrainingStep model features labels
+            testLoss <- computeTestLoss updatedModel testFeatures testLabels
+            
+            -- Log progress periodically
+            when (shouldLogProgress i) $
+                logTrainingProgress i trainLoss testLoss
+            
+            -- Update best model tracking
+            let (newBest, newBestLoss, newCounter) = 
+                    updateBestModelTracking updatedModel testLoss bestModel bestLoss counter
+            
+            pure (updatedModel, newBest, newBestLoss, newCounter)
+    
+    -- Early stopping condition
+    shouldStopEarly counter = counter >= patience
+    
+    -- Logging condition
+    shouldLogProgress i = i `mod` checkInterval == 0
+    
+    -- Perform one training iteration
+    performTrainingStep model features labels = do
+        let predictions = mlp model features
+            loss = HT.binaryCrossEntropyLoss' labels predictions
+        (updatedModel, _) <- HT.runStep model HT.GD loss learningRate
+        pure (updatedModel, HT.asValue loss :: Float)
+    
+    -- Evaluate model on test set
+    computeTestLoss model features labels =
+        let predictions = mlp model features
+            loss = HT.binaryCrossEntropyLoss' labels predictions
+        in pure (HT.asValue loss :: Float)
+    
+    -- Print training progress
+    logTrainingProgress iteration trainLoss testLoss =
+        putStrLn $ "Iteration: " ++ show iteration
+                ++ " | Training Set Loss: " ++ show trainLoss
+                ++ " | Test Set Loss: " ++ show testLoss
+    
+    -- Update best model if test loss improved, otherwise increment patience counter
+    updateBestModelTracking currentModel currentLoss bestModel bestLoss counter =
+        if currentLoss < bestLoss
+            then (currentModel, currentLoss, 0)  -- New best: reset counter
+            else (bestModel, bestLoss, counter + 1)  -- No improvement: increment counter
 ```
 
 ### Running the training loop
 
-We bring everything together by running our traning loop with a model intialized from our `MLPSpec`.
+We bring everything together by running our training loop with a model intialized from our `MLPSpec`.
 
 ```haskell
 initialModel <- HT.sample $ MLPSpec 3 8 3
@@ -398,7 +421,7 @@ index |  variety   | precision |  recall
 
 ## Conclusion
 
-This post demonstrates building a complete multiclass classification system in Haskell from scratch. We tackle the classic Iris dataset. The journey covers data loading, exploratory analysis, feature engineering, typed data modeling, network architecture design, training with early stopping, and evaluation.
+This post demonstrates building a complete multiclass classification system in Haskell from scratch. We tackle the classic Iris dataset. The journey covers data loading, exploratory analysis, feature engineering, typed data modelling, network architecture design, training with early stopping, and evaluation.
 
 
 The tools for a robust data science journey are scattered in the Haskell ecosystem. The hope is that we can unify them and along the way create ergonomic and safe APIs for data science.
