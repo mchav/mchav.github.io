@@ -414,9 +414,9 @@ index |  variety   | precision |  recall
 ------|------------|-----------|----------
  Int  |    Iris    |   Float   |   Float  
 ------|------------|-----------|----------
-0     | Setosa     | 1.0       | 1.0      
-1     | Versicolor | 1.0       | 0.8888889
-2     | Virginica  | 0.875     | 1.0
+0     | Setosa     | 1.0       | 0.9285714
+1     | Versicolor | 0.8888889 | 0.8888889
+2     | Virginica  | 0.8666667 | 0.9285714
 ```
 
 ## Conclusion

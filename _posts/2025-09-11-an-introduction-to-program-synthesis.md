@@ -4,7 +4,7 @@ title: An introduction to program synthesis
 ---
 
 ## Introduction
-This post kicks off a hands-on series about program synthesis—the art of generating small programs from examples. We’ll build a tiny, [FlashFill-style](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/popl11-synthesis.pdf) synthesiser that learns to turn strings like “Joshua Nkomo” into “J. Nkomo” from input/output pairs. We'll see how to define a tiny string-manipulation language, write an interpreter, and search the space of programs to find one that solves our toy problem.
+This post kicks off a hands-on series about program synthesis—the art of teaching machines how to generate code. We’ll build a tiny, [FlashFill-style](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/popl11-synthesis.pdf) synthesiser that learns to turn strings like “Joshua Nkomo” into “J. Nkomo” from input/output pairs. We'll see how to define a tiny string-manipulation language, write an interpreter, and search the space of programs to find one that solves our toy problem.
 
 The accompanying code for this post is [on Github](https://github.com/mchav/synthesis) and runs in under a second for most examples.
 
