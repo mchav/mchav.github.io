@@ -487,3 +487,7 @@ Wanna learn more about bottom-up synthesis? MIT offers an introduction to progra
 Conditionals were a powerful tool, but posed a big challenge for us. How do we use them without blowing up the search space? What if we could tell the search the shape of the final program (that it's a conditional with 2 or 3 terms, and it returns 1 or 0)? We would only search for the hole we need to fill, not worry about others searching everything else.
 
 Top-down enumerative search will be the subject of our next post in the series.
+
+## Wanna join in this work?
+
+Come over to the [dataHaskell Discord](https://discord.gg/8u8SCWfrNC) where we discuss the work that is at the intersection of functional programming and data science?
