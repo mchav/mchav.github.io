@@ -1,6 +1,6 @@
 ---
 layout: post
-title: An introduction to program synthesis (Part II): Enumerative-bottom up search
+title: An introduction to program synthesis (Part II) - Automatically generating features for machine learning
 ---
 
 ## Introduction
