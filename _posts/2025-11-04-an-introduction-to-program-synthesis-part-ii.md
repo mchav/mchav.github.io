@@ -473,6 +473,14 @@ Setosa     | 1.0       | 1.0
 Versicolor | 0.9411765 | 1.0      
 Virginica  | 1.0       | 0.9444444
 
+Our performance on the test set has improved and is much more balanced.
+
+ variety   | precision |  recall  
+-----------|-----------|----------
+Setosa     | 1.0       | 1.0      
+Versicolor | 0.9444444 | 0.9444444
+Virginica  | 0.9285714 | 0.9285714
+
 This is a clear improvement over both the previous versions.
 
 We did it! We used interpretable, automatically generated features to improve our neural network!
