@@ -35,7 +35,7 @@ I used Kaggle’s Titanic dataset because it’s familiar and because there’s 
 
 I wanted this demo to feel honest: do the obvious parsing that many Titanic solutions do, then stop. Let the system take it from there.
 
-The full pipeline I ran is in [this file](https://github.com/mchav/dataframe/blob/main/app/Synthesis.hs).
+**The full pipeline I ran is in [this file](https://github.com/mchav/dataframe/blob/main/app/Synthesis.hs).**
 
 A couple things are doing quiet work here.
 
