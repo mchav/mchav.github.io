@@ -163,7 +163,52 @@ The training accuracy and validation of this decision tree were 0.82.
 
 What happens when we use the LLM?
 
-Here’s the second tree:
+### Getting the prompt right
+
+I started off with this prompt:
+
+```
+Please return nothing else but a single number between 0 and 10 inclusive denoting how interpretable the following expression is and if the operation makes sense given your inferred dimensions of the variables. 0 would be something completely meaningless e.g rgb_house_colour * lot_size and 10 would be something that is a commonly reasoned about quantity e.g price / lot_size. The expression is: fare + age
+```
+
+
+Which was admittedly confusingly written and underspecified. After trying it a number of times in the ollama CLI and getting counterintuitive results (`number_of_people + rejection_rate` scored high but `number_of_siblings + number_of_parents` scored low), I iterated on the prompt to more thoroughly specify the task. Since ollama doesn't "think" you have to be careful how you engineer the prompt so it gets a reasonable solution in one shot.
+
+After many iterations I settled with:
+
+```
+You must output ONLY a single digit 0-10, nothing else. No explanation, no text, just the number.
+
+Evaluate if this expression produces a meaningful quantity by checking:
+    - Do the units/types match for the operation?
+    - Is either operand a categorical code rather than a true quantity?
+    - Would the result be useful to actually calculate?
+
+Scoring:
+    - 0-3: Result is meaningless (e.g., "fare + age" = dollars+years, "height + weight" = meters+kg)
+    - 4-5: Unclear or context-dependent meaning
+    - 6-7: Makes sense in specific domains
+    - 8-9: Clear, commonly useful quantity
+    - 10: Fundamental/universal quantity
+Guidelines:
+    - Addition/subtraction: operands must represent the same kind of thing
+    - Multiplication/division: can create meaningful derived quantities
+    - Consider: would this result be useful to calculate in practice?
+    - `toDouble` is just a function that converts any number to a decimal and is semantically unimportant.
+
+Examples:
+    toDouble(fare) + toDouble(age) = 2 (adding money to years)
+    toDouble(price) / toDouble(area) = 9 (price per sq ft)
+    toDouble(distance) / toDouble(time) = 10 (speed)
+    toDouble(num_people) * toDouble(rejection_rate) = 9 (expected rejections)
+    toDouble(revenue) - toDouble(costs) = 10 (profit)
+    toDouble(height) + toDouble(weight) = 2 (adding length to mass)
+Output format: Just the digit, e.g., 2
+Think very carefully about each but only give me the final answer.
+Expression:
+```
+
+Here’s the second tree where candidate expressions are pruned by the LLM if their "semantic" score is less than 5:
 
 ```haskell
 model =
