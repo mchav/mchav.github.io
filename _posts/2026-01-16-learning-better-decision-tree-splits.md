@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Learning better decision tree splits: LLMs as Heuristics for Program Synthesis
+title: Learning better decision tree splits - LLMs as Heuristics for Program Synthesis
 ---
 
 A lot of tabular modeling gets easier the moment you stumble onto the right derived quantity. Not something mysterious or "deep." It's usually something you can name: a ratio that turns two raw columns into a rate; a difference that becomes a margin; a simple count that captures what a bunch of messy fields were hinting at.
