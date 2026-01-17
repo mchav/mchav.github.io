@@ -21,11 +21,11 @@ That one constraint was enough to turn a messy tree into something that looks a 
 
 When people say feature engineering is “manual,” I think what they really mean is: the good features are the ones you can explain without apologizing.
 
-If I write down clicks / impressions, I can call it “conversion rate.” If I write down price / sqft, I can call it “price per square foot.” If I write down revenue - costs, I can call it “profit.”
+If I write down `clicks / impressions`, I can call it “conversion rate.” If I write down `price / sqft`, I can call it “price per square foot.” If I write down `revenue - costs`, I can call it “profit.”
 
 Even when those aren’t perfect, they’re at least coherent. They’re quantities that exist in the world.
 
-Now compare that to something like income / zip_code. It might correlate with house price (New York incomes are higher and would be scaled down less because they have smaller valued zip codes compared to Texas, for example). It might even boost accuracy. But it’s not a quantity anyone would compute. It’s a red flag that the search procedure is exploiting quirks in the dataset instead of discovering "features."
+Now compare that to something like `income / zip_code`. It might correlate with house price (New York incomes are higher and would be scaled down less because they have smaller valued zip codes compared to Texas, for example). It might even boost accuracy. But it’s not a quantity anyone would compute. It’s a red flag that the search procedure is exploiting quirks in the dataset instead of discovering "features."
 
 This distinction—between "works statistically" and "is a coherent quantity" is exactly what I wanted to encode into the feature generator.
 
@@ -41,9 +41,9 @@ A couple things are doing quiet work here.
 
 First: I’m renaming columns so the output reads like English. That matters more than it sounds. If the whole point is interpretability, the printed artifact shouldn’t feel like you’re decoding abbreviations.
 
-Second: notice maxExprDepth = 2. That’s the “I want features I can still name” constraint. Depth 3 can be fun, but depth 2 is usually where you get ratios, differences, and simple interactions without the expression turning into algebra homework.
+Second: notice `maxExprDepth = 2`. That’s the “I want features I can still name” constraint. Depth 3 can be fun, but depth 2 is usually where you get ratios, differences, and simple interactions without the expression turning into algebra homework.
 
-Third: I set complexityPenalty = 0 in this run on purpose. I wanted to isolate the effect of the LLM filter. In other words: "what happens if the only regularization pressure is semantic?"
+Third: I set `complexityPenalty = 0` in this run on purpose. I wanted to isolate the effect of the LLM filter. In other words: "what happens if the only regularization pressure is semantic?"
 
 ## The feature generator
 
