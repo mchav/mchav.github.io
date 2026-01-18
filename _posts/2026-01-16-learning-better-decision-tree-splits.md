@@ -19,7 +19,7 @@ That one constraint was enough to turn a messy tree into something that looks a 
 
 ## Features and meaning
 
-When people say feature engineering is “manual,” I think what they really mean is: the good features are the ones you can explain without apologizing.
+In practice, the strongest features are the ones you can explain simply. To yourself and to others.
 
 If I write down `clicks / impressions`, I can call it “conversion rate.” If I write down `price / sqft`, I can call it “price per square foot.” If I write down `revenue - costs`, I can call it “profit.”
 
