@@ -11,8 +11,6 @@ That was the paper that gave me a foundation. Instead of copying APIs, I could i
 
 I kept wondering, however, whether there was a level below that. Whether there was a smaller set of truly primitive operations that the 15 are built from. If I could find those, I'd have a real foundation: operations small enough to be obviously correct, expressive enough to build everything else.
 
-But 15 operators is still a lot of surface area to get right. I kept wondering whether there was a level below that. A smaller set of truly primitive operations that the 15 are built from. If I could find those, I'd have a real foundation: operations small enough to be obviously correct, expressive enough to build everything else.
-
 ## Petersohn's dataframe algebra
 
 It's worth spending some time on what Petersohn et al. actually did, because it frames everything that follows.
