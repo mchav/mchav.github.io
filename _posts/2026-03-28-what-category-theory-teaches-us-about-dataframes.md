@@ -3,19 +3,17 @@ layout: post
 title: "What Category Theory Teaches Us About DataFrames"
 ---
 
-When I initially challenged myself with building a dataframe implementation, I began by looking at what already existed for inspiration. Spark was my initial reference. Then pandas. Then Polars, R's data.table, Julia's DataFrames.jl. Each one had its own take on the API. Early on, my main challenge was trying to figure out which operations I actually needed to implement to call what I had a "dataframe". The surface area felt enormous. Do I need `pivot` and `melt` as separate things? Is `apply` different from `map`? What about `transform`, `agg`, `applymap`, `pipe`? Some of these seemed like the same operation wearing different hats. Others seemed genuinely distinct. I didn't have a good framework for telling them apart.
+Every dataframe library ships with hundreds of operations. pandas alone has over 200 methods on a DataFrame. Is `pivot` different from `melt`? Is `apply` different from `map`? What about `transform`, `agg`, `applymap`, `pipe`? Some of these seem like the same operation wearing different hats. Others seem genuinely distinct. Without a framework for telling them apart, you end up memorizing APIs instead of understanding structure.
 
-I decided to do some reading around the thoery of dataframes. Since theory is in the business of trying to find unifying abstractions and dataframes were so ubiquitous I thought I'd find a wealth of material to build from. Sadly, I only found a handful of resource. The most useful was Petersohn et al.'s *Towards Scalable Dataframe Systems*. They had built a system called Modin which was a scalable/distributed drop-in replacement for pandas. To do that they needed to understand the actual structure underneath the API. So they studied it extensively. They analyzed 1 million Jupyter notebooks, cataloged how people use pandas, and proposed something I hadn't seen before: a *dataframe algebra*. A formal set of about 15 operators that can express what all 200+ pandas operations do.
+I ran into this question while building my own dataframe library. I needed to decide which operations were truly fundamental and which were just surface-level variations. That search led me to Petersohn et al.'s *Towards Scalable Dataframe Systems*. They had built Modin, a scalable drop-in replacement for pandas, and to do that they needed to understand the actual structure underneath the API. They analyzed 1 million Jupyter notebooks, cataloged how people use pandas, and proposed a *dataframe algebra*: a formal set of about 15 operators that can express what all 200+ pandas operations do.
 
-That was the paper that gave me a foundation. Instead of copying APIs, I could implement the algebra and build the user-facing operations as compositions of those primitives.
-
-I kept wondering, however, whether there was a level below that. Whether there was a smaller set of truly primitive operations that the 15 are built from. If I could find those, I'd have a real foundation: operations small enough to be obviously correct, expressive enough to build everything else.
+That algebra was a huge compression, but I kept wondering whether there was a level below it. Whether there was a smaller set of truly primitive operations that the 15 are built from. If those exist, they would be a real foundation: operations small enough to be obviously correct, expressive enough to build everything else.
 
 ## Petersohn's dataframe algebra
 
 It's worth spending some time on what Petersohn et al. actually did, because it frames everything that follows.
 
-They started by defining what a dataframe *is*. Surprisingly, nobody had done this formally before. Their Definition 4.1 says a dataframe is a tuple *(A, R, C, D)*: an array of data *A*, row labels *R*, column labels *C*, and a vector of column domains *D*. This is more precise than "a table" because it captures things that make dataframes different from relational tables. Rows and columns are both ordered, both labeled, and treated symmetrically. You can transpose a dataframe. You can promote data values into column labels. These aren't things you can do with a SQL table.
+They started by defining what a dataframe is. Surprisingly, nobody had done this formally before. Their Definition 4.1 says a dataframe is a tuple *(A, R, C, D)*: an array of data *A*, row labels *R*, column labels *C*, and a vector of column domains *D*. This is more precise than "a table" because it captures things that make dataframes different from relational tables. Rows and columns are both ordered, both labeled, and treated symmetrically. You can transpose a dataframe. You can promote data values into column labels. These aren't things you can do with a SQL table.
 
 Then they identified the operators. Here's their Table 1, condensed:
 
@@ -40,11 +38,11 @@ The "Origin" column matters. The first nine operators come from relational algeb
 
 Petersohn showed that over 85% of the pandas API can be rewritten as compositions of these operators. Operations like `fillna`, `isnull`, `str.upper`, and `cummax` are all special cases of MAP. Operations like `sort_values`, `set_index`, `reset_index`, `merge`, `groupby`, and `pivot` all map one-to-one onto operators in the algebra. That's a huge compression: 200+ ad hoc methods become 15 composable primitives.
 
-But I kept looking at the relational operators in that table (PROJECTION, RENAME, GROUPBY, JOIN) and thinking: these feel related. They all change the *schema* of the dataframe. Is there a deeper relationship?
+But I kept looking at the relational operators in that table (PROJECTION, RENAME, GROUPBY, JOIN) and thinking: these feel related. They all change the schema of the dataframe. Is there a deeper relationship?
 
-## Three shapes of schema change
+## Shapes of schema change
 
-Staring at Petersohn's table long enough, a pattern starts to emerge. Some operators change the *schema*, meaning which columns exist and what types they have. Others leave the schema alone and only affect the rows. And if you focus on the schema-changing ones, they fall into three groups.
+Staring at Petersohn's table long enough, a pattern starts to emerge. Some operators change the schema, meaning which columns exist and what types they have. Others leave the schema alone and only affect the rows. And if you focus on the schema-changing ones, they fall into three groups.
 
 **Restructuring.** You rearrange, subset, or relabel columns. The data stays the same; only the shape changes. In SQL terms: `SELECT name, salary FROM employees` produces a two-column result from a three-column table. In the dataframe library:
 
@@ -79,7 +77,7 @@ aggregate
 -- Each department gets a list of all its salaries
 ```
 
-Multiple rows map to the same key and get combined. This covers Petersohn's GROUPBY, and also parts of UNION and DROP DUPLICATES, which are also operations that identify or merge rows.
+Multiple rows map to the same key and get combined. This covers Petersohn's GROUPBY and UNION.
 
 **Pairing.** You find rows in two tables that agree on a shared key and stitch them into a wider row. In SQL: `SELECT * FROM employees INNER JOIN departments USING (department)`. In the library:
 
@@ -91,13 +89,26 @@ innerJoin ["department"] employees departments
 
 Shared keys appear once; unique columns from each side are concatenated. Left and outer joins are the same idea but with nullable columns where matches might be missing. This covers Petersohn's CROSS PRODUCT / JOIN.
 
-So the relational core of Petersohn's algebra (PROJECTION, RENAME, GROUPBY, JOIN, UNION, DIFFERENCE, DROP DUPLICATES) maps onto three patterns: restructuring, merging, pairing. The schema-preserving operators (SELECTION, SORT, WINDOW) are orthogonal. They change *which rows* you see or *in what order*, but not the column structure. And the dataframe-specific operators (TRANSPOSE, MAP, TOLABELS, FROMLABELS) live outside the relational model entirely.
+**What doesn't fit.** Two relational operators resist this grouping. In SQL: `SELECT * FROM employees EXCEPT SELECT * FROM contractors` returns rows in one table but not the other. And `SELECT DISTINCT * FROM employees` collapses duplicate rows. In the library:
 
-I had the three patterns. What I didn't have was a reason why it should be *these* three. Are restructuring, merging, and pairing truly fundamental, or did I just happen to group things this way? Could there be four patterns, or two? Is there a theory that predicts these three and explains why they compose?
+```haskell
+distinct df
+-- Same schema, fewer rows: removes duplicates
+
+-- DIFFERENCE is not yet implemented, but the idea is:
+-- difference employees contractors
+-- Same schema, fewer rows: removes rows present in both
+```
+
+DIFFERENCE and DROP DUPLICATES both change which rows are present, but they don't restructure columns, collapse by key, or pair across tables. They feel set-theoretic: one computes a complement, the other computes an image. For now I'll set them aside, but they'll reappear when the categorical picture gets sharper.
+
+So five of Petersohn's relational operators (PROJECTION, RENAME, GROUPBY, UNION, JOIN) map cleanly onto three patterns: restructuring, merging, pairing. The schema-preserving operators (SELECTION, SORT, WINDOW) are orthogonal. They change which rows you see or in what order, but not the column structure. And the dataframe-specific operators (TRANSPOSE, MAP, TOLABELS, FROMLABELS) live outside the relational model entirely.
+
+I had three patterns and two outliers. What I didn't have was a reason why it should be these three patterns. Are restructuring, merging, and pairing truly fundamental, or did I just happen to group things this way? Where do DIFFERENCE and DROP DUPLICATES belong? Is there a theory that predicts all of this?
 
 That's the question my mentor Sam Stites pointed me toward when he suggested I read Fong and Spivak's *Seven Sketches in Compositionality*. The answer turns out to come from category theory. The version of category theory in Chapter 3 of that book is concrete and database-flavored. You don't need to know abstract math. You just need to think carefully about what a schema is and what it means to change one.
 
-## Why these three
+## Why three migration functors
 
 Let's start with a concrete example. Imagine you have two schemas:
 
@@ -108,7 +119,7 @@ Departments: department, budget
 
 There's a natural relationship between them. The `department` column in `Employees` references the `department` column in `Departments`. That's a foreign key. It's a mapping from one schema to the other: every employee row points at a department row.
 
-Now, what can you *do* with that mapping? Fong and Spivak's Chapter 3 observes that there are exactly three things.
+Now, what can you do with that mapping? Fong and Spivak's Chapter 3 identifies three fundamental operations.
 
 **You can restrict data to fit a different schema.** The schema `{name, salary}` is a subset of `Employees`. When you call `select ["name", "salary"]`, you're saying: I have data shaped like the full schema, but I only want the part that fits this smaller schema. The data doesn't change. You're just dropping the columns that aren't in the subset.
 
@@ -120,33 +131,69 @@ Fong and Spivak call this **Delta (Δ)**. Given a mapping between schemas, Delta
 
 Fong and Spivak call this **Sigma (Σ)**. Given a mapping where many source rows point at the same target, Sigma collects everything at each target. The `collect` function keeps all values as a list, which is raw Sigma. Using `sum` or `mean` composes the collection with a fold.
 
-**You can combine data from both schemas by pairing.** Given data on *both* `Employees` and `Departments`, you can find rows that agree on `department` and stitch them into a wider row. That's `innerJoin ["department"] employees departments`. Each result row contains columns from both tables, matched on their shared key.
+**You can combine data from both schemas by pairing.** Given data on both `Employees` and `Departments`, you can find rows that agree on `department` and stitch them into a wider row. That's `innerJoin ["department"] employees departments`. Each result row contains columns from both tables, matched on their shared key.
 
 Fong and Spivak call this **Pi (Π)**. Their mnemonic is "pair and query data," with a footnote: "more commonly called 'join' by database programmers." Pi finds all tuples that satisfy the constraints imposed by the shared key.
 
-So the three patterns from the previous section (restructuring, merging, pairing) have names: Δ, Σ, Π. But the names are the least interesting part. What's interesting is *why there are exactly three*.
+So the three patterns from the previous section (restructuring, merging, pairing) have names: Δ, Σ, Π. But the names are the least interesting part. What's interesting is why these three arise naturally from the structure of schema mappings.
 
-The answer is about the structure of schema mappings. Fong and Spivak model schemas as *categories*, which is just a precise way of saying "a collection of things (tables, columns) with relationships between them (foreign keys) and a rule for following chains of relationships."
+The answer is about how schemas relate to each other. Fong and Spivak model schemas as *categories*, which is just a precise way of saying "a collection of things (tables, columns) with relationships between them (foreign keys) and a rule for following chains of relationships."
 
 An *instance* of a schema is what you get when you assign actual data to it: a set of rows for each table, and for each foreign key, a function that maps a row to the row it references. So an instance of the `Employees`/`Departments` schema assigns rows `{Alice, Bob, Carol}` to `Employees`, rows `{Engineering, Sales}` to `Departments`, and a function that sends Alice → Engineering, Bob → Sales, Carol → Engineering. The only rule is consistency: if `Employees` references `Departments` which references `Location`, then looking up Alice's location directly has to give the same answer as looking up Alice's department and then that department's location. In category theory, an instance that satisfies this consistency rule is called a *functor*.
 
-When you have a mapping between two schemas (also a functor), Fong and Spivak prove that it induces *exactly* these three data migration operations and no others. They're connected by a structure called an *adjoint triple*:
+When you have a mapping between two schemas (also a functor), Fong and Spivak prove that it induces these three data migration operations. They're connected by a structure called an *adjoint triple*:
 
 **Σ ⊣ Δ ⊣ Π**
 
 Sigma is the most generous way to move data from the detailed schema to the coarser one: take everything and merge. Pi is the most conservative: only keep tuples that match on all shared attributes. Delta goes the other direction, restricting data without inventing or combining anything. The adjunction is a formal guarantee that these three compose: the output of any Δ step is a valid input for any Σ or Π step, and vice versa. That's the reason you can chain select into join into groupBy and the schemas just work out.
 
+## What the adjoint triple doesn't cover
+
+The adjoint triple accounts for five of Petersohn's seven relational operators. But DIFFERENCE and DROP DUPLICATES, the two I set aside earlier, don't arise from schema morphisms at all. They operate on instances of the same schema, not on migrations between schemas.
+
+Think about what DIFFERENCE actually does. Suppose you have two dataframes with the same schema:
+
+```
+all_employees:           terminated:
+name   department        name   department
+Alice  Engineering       Carol  Engineering
+Bob    Sales
+Carol  Engineering
+```
+
+DIFFERENCE returns the rows in `all_employees` that don't appear in `terminated`: Alice and Bob. The schema doesn't change. Only the set of rows changes. And DROP DUPLICATES works on a single dataframe:
+
+```
+with_duplicates:         after distinct:
+name   department        name   department
+Alice  Engineering       Alice  Engineering
+Bob    Sales             Bob    Sales
+Alice  Engineering
+```
+
+It collapses identical rows into one. Again, the schema is untouched.
+
+Neither operation changes which columns exist. They change which rows are present within a fixed schema. The adjoint triple has nothing to say about them because Δ, Σ, and Π are about moving data between schemas. DIFFERENCE and DROP DUPLICATES are about reasoning about subsets of rows within a single schema.
+
+To handle operations on subsets, you need your category to support a notion of "subset" with operations like complement and intersection. Not every category does. But the category of instances on a schema does, because assigning sets of rows to each table and functions to each foreign key gives you all the set-theoretic structure you need. In category theory, a category with this kind of structure is called a *topos*. The important thing about a topos for our purposes is that it comes equipped with tools for working with subsets:
+
+- **DIFFERENCE** is a complement operation on subsets. Given two subsets of rows A and B (two dataframes with the same schema), DIFFERENCE computes the rows in A that are not in B. A topos guarantees that this complement is well-defined and behaves the way you'd expect from set theory.
+
+- **DROP DUPLICATES** is an image operation. Think of each row's content as a function from the row's identity to its values. Multiple rows can map to the same values. DROP DUPLICATES collapses them, keeping one representative per distinct value. A topos guarantees that every such function factors cleanly through its image, which is what makes DROP DUPLICATES well-defined.
+
+So the categorical picture of relational operations has two layers: the **migration functors** (Δ, Σ, Π) for moving data across schemas, and the **topos structure** for reasoning about subsets of rows within a schema.
+
 Here's the full picture, mapping Petersohn's operators to the categorical framework:
 
 | Petersohn operator | Pattern | Category theory |
 |---|---|---|
-| PROJECTION | Restructuring | Delta |
-| RENAME | Restructuring | Delta |
-| GROUPBY | Merging | Sigma |
-| UNION | Merging | Sigma |
-| DIFFERENCE | Merging | Sigma |
-| DROP DUPLICATES | Merging | Sigma |
-| CROSS PRODUCT / JOIN | Pairing | Pi |
+| PROJECTION | Restructuring | Delta (Δ) |
+| RENAME | Restructuring | Delta (Δ) |
+| GROUPBY | Merging | Sigma (Σ) |
+| UNION | Merging | Sigma (Σ) |
+| CROSS PRODUCT / JOIN | Pairing | Pi (Π) |
+| DIFFERENCE | (set-theoretic) | Subobject complement (topos) |
+| DROP DUPLICATES | (set-theoretic) | Image factorization (topos) |
 | SELECTION | (schema-preserving) | Natural transformation |
 | SORT | (schema-preserving) | — |
 | WINDOW | (schema-preserving) | — |
@@ -155,15 +202,15 @@ Here's the full picture, mapping Petersohn's operators to the categorical framew
 | TOLABELS | (dataframe-specific) | — |
 | FROMLABELS | (dataframe-specific) | — |
 
-The first seven operators decompose into Δ, Σ, Π. The next three preserve the schema. They're morphisms between instances on the same schema, not migrations between schemas. The last four are outside the relational model entirely.
+The first five operators decompose into the adjoint triple Δ, Σ, Π. The next two use the topos structure of the category of instances. Together, these seven account for the relational core. The next three preserve the schema. They're morphisms between instances on the same schema, not migrations between schemas. The last four are outside the relational model entirely.
 
-This is the compression: 200 pandas operators → 15 algebraic operators → 3 categorical patterns covering the relational core. The schema-preserving and dataframe-specific operators are important, but they're not where the schema complexity lives. It's the schema-changing operations (restructuring, merging, pairing) that need to compose correctly, and the adjoint triple is what makes that composition work.
+This is the compression: 200 pandas operators → 15 algebraic operators → 3 migration functors and 2 topos-theoretic operations covering the relational core. The schema-preserving and dataframe-specific operators are important, but they're not where the complexity lives. The migration functors handle schema-changing operations, the topos structure handles set-theoretic reasoning within a schema, and the two layers compose.
 
-## Designing an API around the three patterns
+## Designing an API around these patterns
 
-So what does this mean if you're actually building a dataframe library? The Δ/Σ/Π decomposition gives you a design principle: every schema-changing operation you expose should be expressible as one of the three patterns, and each pattern should have a clear rule for computing the output schema from the input schema.
+So what does this mean if you're actually building a dataframe library? The categorical decomposition gives you a design principle: each operation should have a clear rule for computing its output schema from its input schema. The migration functors change the schema itself. The topos-theoretic operations preserve the schema but change which rows are present.
 
-Start with Delta. You need operations that reshape a schema without computing new data. That means:
+Start with the migration functors. Delta gives you operations that reshape a schema without computing new data. That means:
 - `select columns` → output schema is the subset of input columns you named
 - `exclude columns` → output schema is the input minus the columns you named
 - `rename old new` → output schema is the input with one column relabeled
@@ -183,9 +230,18 @@ Then Pi. You need operations that combine two schemas by shared key. That means:
 
 Each join variant is Pi with a different policy for missing matches. The schema rule is the same; only the nullability wrapping changes.
 
-Finally, the schema-preserving operations (`filter`, `sort`, `take`, `sample`) sit outside the three patterns. Their output schema is always identical to their input schema. They're important, but they don't interact with schema composition, which is why they can be designed independently.
+Then the topos layer. DIFFERENCE and DROP DUPLICATES don't need schema rules because they preserve the schema. Their type signatures reflect this:
 
-Once you have these pieces, a pipeline is a chain of Δ, Σ, and Π steps, and each step's output schema is a valid input for the next. In the dataframe library, Haskell's type system enforces this. Schemas are encoded at the type level, and the compiler checks every transition:
+```haskell
+distinct :: TypedDataFrame cols -> TypedDataFrame cols
+-- difference :: TypedDataFrame cols -> TypedDataFrame cols -> TypedDataFrame cols
+```
+
+The input and output types are identical. What changes is which rows are present: `distinct` collapses duplicates, and `difference` removes rows that appear in the second argument. Both take a dataframe and return a dataframe with the same columns but fewer rows, which makes their semantics straightforward to implement and optimize.
+
+Finally, the schema-preserving operations (`filter`, `sort`, `take`, `sample`) sit outside the migration and topos patterns. Their output schema is always identical to their input schema. They're important, but they don't interact with schema composition, which is why they can be designed independently.
+
+Once you have these pieces, a pipeline is a chain of migration steps (Δ, Σ, Π) and row-level steps (DIFFERENCE, DROP DUPLICATES, filter), and each step's output schema is a valid input for the next. In the dataframe library, Haskell's type system enforces this. Schemas are encoded at the type level, and the compiler checks every transition:
 
 ```haskell
 type Employees =
@@ -198,6 +254,7 @@ type Departments = '[ Column "department" Text, Column "budget" Double ]
 
 result =
     employees
+        & T.distinct                                -- topos: drop duplicate rows
         & T.innerJoin @'["department"] departments  -- Π: schema grows
         & T.derive @"cost_ratio"                    -- grows by one
             (T.col @"salary" / T.col @"budget")
@@ -209,7 +266,7 @@ result =
             )
 ```
 
-Reference `"salary"` after `select` drops it? Compile error. Derive a column that already exists? Compile error. Join on a key missing from one table? Compile error. If the pipeline compiles, every schema transition is valid. But this idea isn't Haskell-specific. Any language with sufficiently expressive types could enforce the same rules. The three patterns tell you what the rules *are*. The type system is just the enforcement mechanism.
+Reference `"salary"` after `select` drops it? Compile error. Derive a column that already exists? Compile error. Join on a key missing from one table? Compile error. If the pipeline compiles, every schema transition is valid. But this idea isn't Haskell-specific. Any language with sufficiently expressive types could enforce the same rules. The categorical decomposition tells you what the rules are. The type system is just the enforcement mechanism.
 
 The patterns also help with optimization. If you know exactly what each operation does to the schema, you can reason about when it's safe to reorder steps. The library has a lazy evaluation mode where a pipeline is built up as a logical plan before being executed:
 
@@ -222,13 +279,13 @@ optimize batchSz =
         . fuseFilters
 ```
 
-Consecutive filters get fused into one. Filters get pushed past column operations toward the data source. Derived columns that are never referenced downstream get dropped before execution. These rewrites are safe because the operations obey algebraic laws that follow from the three patterns: restructuring and filtering commute when the filter doesn't touch restructured columns; conjunction of predicates is the same as filtering twice; a Δ step that drops a column can't affect a filter that doesn't reference it.
+Consecutive filters get fused into one. Filters get pushed past column operations toward the data source. Derived columns that are never referenced downstream get dropped before execution. These rewrites are safe because the operations obey algebraic laws that follow from the categorical structure: restructuring and filtering commute when the filter doesn't touch restructured columns; conjunction of predicates is the same as filtering twice; a Δ step that drops a column can't affect a filter that doesn't reference it.
 
 ## Where this is going
 
-The bigger picture I'm working toward is a canonical definition of the dataframe. Petersohn et al. made the best attempt I've seen with their data model and algebra. Category theory adds algebraic structure on top. It says the schema-changing operations decompose into three migration functors composed via adjunctions. Together, these give you a foundation: a data model that says what a dataframe *is*, an algebra that says what you can *do* with it, and a categorical framework that says why those operations *compose*.
+The bigger picture I'm working toward is a canonical definition of the dataframe. Petersohn et al. made the best attempt I've seen with their data model and algebra. Category theory adds algebraic structure on top: three migration functors composed via adjunctions for schema-changing operations, and topos-theoretic machinery for set-theoretic reasoning within a schema. Together, these cover the relational core of the dataframe algebra.
 
-That's what I wanted when I started the library. A small set of operations that compose into larger abstractions, with the compiler verifying every step. I think there's a lot more to explore here: the dataframe-specific operators (TRANSPOSE, TOLABELS, FROMLABELS) deserve their own algebraic treatment, and the interaction between schema-changing and schema-preserving operations could be made more precise. But the core (restructure, merge, pair) feels solid.
+That's what I wanted when I started the library. A small set of operations grounded in theory, with the compiler verifying every step. This post covers the relational operators, the ones dataframes share with SQL. The dataframe-specific operators (TRANSPOSE, TOLABELS, FROMLABELS) and the symmetry between rows and columns that makes dataframes different from relational tables deserve their own algebraic treatment. But for the relational core, the two-layer categorical picture of migration functors and topos structure feels solid.
 
 If any of this sounds interesting: Fong and Spivak's [*Seven Sketches in Compositionality*](https://arxiv.org/abs/1803.05316) is written for non-mathematicians and builds from first principles. Chapter 3 covers databases and the Δ/Σ/Π migration functors. Petersohn et al.'s [*Towards Scalable Dataframe Systems*](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2020/EECS-2020-198.html) covers the algebra, the data model, and what people actually do in those 1 million notebooks. Both are worth your time.
 
