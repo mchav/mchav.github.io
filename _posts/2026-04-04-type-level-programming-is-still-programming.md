@@ -3,7 +3,7 @@ layout: post
 title: "Type-level programming is still programming"
 ---
 
-I was showing a friend my typed dataframe API. The whole pitch was: look, you derive a schema from your data, and then the compiler catches column name typos, type mismatches, all the stuff that would otherwise blow up at runtime. I had a nice demo ready using the [Kaggle credit card fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) (about 284,000 rows, 31 columns).
+I was showing a friend the typed dataframe API. The whole pitch was: look, you derive a schema from your data, and then the compiler catches column name typos, type mismatches, all the stuff that would otherwise blow up at runtime. I had a nice demo ready using the [Kaggle credit card fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) (about 284,000 rows, 31 columns).
 
 I loaded it up in GHCi and ran the untyped version first:
 
@@ -43,7 +43,7 @@ dataframe> df |> D.groupBy [F.name _class_]
 	Did you mean rand?
 ```
 
-Now you've waiting the duration of the entire execution of the pipeline (allocations and all) to discover that there is a misnamed column. That's pretty wasteful.
+Now you've waited the duration of the entire execution of the pipeline (allocations and all) to discover that there is a misnamed column. That's pretty wasteful.
 
 So I ported the example to the typed dataframe and API and ran it. First the misnamed version:
 
@@ -67,6 +67,7 @@ dataframe> tdf |> DT.groupBy @'["Class"]
               (agg
                  @"rand" (DT.mean (DT.col @"V1") - DT.mean (DT.col @"V2")) aggNil)
           |> DT.select @'["ran"]
+(0.00 secs,)
 ```
 
 And then the happy path:
@@ -111,7 +112,7 @@ eval ctx expr@(Binary ...) =
 
 None of them fired. The program never reached runtime.
 
-I tried a few more things after that. I thought maybe it was laziness, that evaluation was being deferred and the traces weren't forced. I added bang patterns, `seq` calls, explicit `evaluate` in IO. Nothing changed. The traces weren't printing because the code wasn't running. Period.
+I tried a few more things after that. I thought maybe it was laziness, that evaluation was being deferred and the traces weren't forced. I added bang patterns, `seq` calls, explicit `evaluate` in IO. Nothing changed. The traces weren't printing because the code wasn't running.
 
 That's when I understood: the hang was happening during GHCi's type-checking of the expression at the prompt.
 
@@ -177,7 +178,7 @@ GroupKeyColumns '["Class"] '[Column "V1" Double, Column "V2" Double, Column "Cla
 -- 8 evaluations of GroupKeyColumns '["Class"] '[] = '[].
 ```
 
-Three columns, eight leaf evaluations. The tree of work doubles at every level. For n columns, GHC does 2^n reductions.
+Three columns, eight leaf evaluations. The tree of work doubles at every level. For n columns, GHC does 2^n reductions. Surprisingly, type-level if statement aren't lazy as I think I expected them to be.
 
 With 10 columns (the housing dataset I tested against), that's 1,024 reductions. Imperceptible. With 31 columns (the Kaggle credit card dataset I demoed with), that's 2,147,483,648 reductions. That's why it hung.
 
