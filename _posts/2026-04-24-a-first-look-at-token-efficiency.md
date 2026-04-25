@@ -9,7 +9,7 @@ My thoughts going into this were that Haskell would be more efficient because th
 
 Most of the churn seems to be the LLM trying to lookup how to do pretty simple things in Haskell. Whereas when working with Marimo pair it gets straight to the task almost without thinking about it (about 200 tokens in vs a couple of thousand in Haskell). As a result, it's probably "cheaper" overall to use Python for arbitrary tasks at this point in time.
 
-You can see how the LLM solves each task in environments below.
+You can see how the LLM solves each task in the videos below.
 
 [![Sabela notebook using Claude](https://img.youtube.com/vi/JVDTYm4aYIE/0.jpg)](https://youtu.be/JVDTYm4aYIE "Sabela + Claude Code integration")
 
