@@ -20,7 +20,7 @@ Generating programs is effectively a search problem. Rather, it is a number of s
 
 This blog post is a report of a set of experiments I ran to investigate how to better design tools to minimise context complexity. Recent work has started varying the surface too, restructuring tool documentation ([EasyTool](https://aclanthology.org/2025.naacl-long.44/)), injecting specification defects ([WildAGTEval](https://arxiv.org/abs/2601.00268)), manipulating tool context ([ToolScope](https://aclanthology.org/2026.acl-long.1573/)), and optimising docs from failed traces ([DocsChisel](https://arxiv.org/abs/2608.10037)). This post explores how to think of it as a growing quantity to optimize over long multiple tasks.
 
-## The setup
+## Some modelling choices
 
 To see anything I had to use small models. Large models make for bad study subjects since they have both very large context windows and a lot of information baked into their weights. The models I tested on are local, small models with between 4 and 20 billion parameters.
 
